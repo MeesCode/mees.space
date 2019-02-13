@@ -1,0 +1,217 @@
+<!-- 
+	ohai you must be thinking: "wow his website looks clean, he must have used some fancy libraries or something." This is not actually the case. Every animation on this page is using native CSS animations. That way it shows up nicely on every device, even when javascript is disabled :)
+-->
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Mees Brinkhuis - Web Developer Extraordinaire</title>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="https://fonts.googleapis.com/css?family=Merriweather:400,900" rel="stylesheet">
+	</head>
+	
+	<body>
+
+		<div class="wrapper">
+		 <div class="pane left">
+			<div class="overlay"></div>
+		 </div>
+		 <div class="pane right">
+				<div class="content">
+					<h1>Mees Brinkhuis</h1>
+					<h2>Web Developer Extraoridnaire</h2>
+					<h4>
+						I am a student at the Delft University of Technology, an experienced web developer, and also a massive robotics enthusiast.
+					</h4>
+					<a href="https://www.linkedin.com/in/mees-brinkhuis/">
+					<svg class="linkedin" viewBox="0 0 24.5 24.5">
+						<g fill="#33ACB7" stroke="#33ACB7" fill-opacity="0" stroke-width=".3">
+							<path d="m19.25 0.25h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5z"/>
+						</g>
+						<g fill="#FFF" stroke="#33ACB7" fill-opacity="0" stroke-width=".3">
+							<path d="m8.25 19.25h-3v-11h3z"/>
+							<path d="m6.75 6.982c-0.966 0-1.75-0.79-1.75-1.764s0.784-1.764 1.75-1.764 1.75 0.79 1.75 1.764-0.783 1.764-1.75 1.764z"/>
+							<path d="m20.25 19.25h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476z"/>
+						</g>
+					 </svg>
+					</a>
+				</div>
+			</div>
+		</div>
+
+	</body>
+
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			font-family: 'Merriweather', serif;
+			animation-fill-mode: forwards;
+		}
+
+		body{
+			font-size: 1.5em;
+		}
+
+		path {
+			stroke-dashoffset: 90;
+			stroke-dasharray: 90;
+			stroke-opacity: 1;
+			animation-name: dash;
+			animation-delay: 4.6s;
+			animation-duration: 3s;
+		}
+
+		.linkedin{
+			width: 80px;
+			margin-top: 20px;
+			animation-name: draw-linkedin;
+			animation-delay: 4.6s;
+			animation-duration: 2s;
+		}
+
+		.wrapper{
+			display: flex;
+			width: 100vw;
+			height: 100vh;
+			overflow: hidden;
+		}
+
+		@media screen and (max-width: 768px) {
+			.wrapper{
+				display: block;
+			}
+
+			.wrapper .pane{
+				height: 50vh;
+				width: 100vw;
+			}
+		}
+
+		@media screen and (max-width: 568px) {
+			body{
+				font-size: .8em;
+			}
+
+			.linkedin{
+				width: 60px;
+			}
+		}
+
+		@media screen and (max-height: 568px) {
+			body{
+				font-size: .8em;
+			}
+
+			.linkedin{
+				width: 60px;
+			}
+		}
+
+		.pane{
+			width: 50%;
+			height: 100vh;
+			animation-duration: 3s;
+			border: none;
+		}
+
+		.content{
+			text-align: center;
+			padding: 0 20px;
+			height: 100%;
+
+			display: flex;
+			justify-content: center;
+			text-align: center;
+			align-items: center;
+			flex-flow: column;
+		}
+
+		.content h1 {
+			border: 1px solid rgba(0, 0, 0, 0);
+			animation-name: draw;
+			animation-delay: 3.4s;
+			animation-duration: 1.5s;
+			color: rgba(0, 0, 0, 0);
+			font-weight: 900;
+		}
+
+		.content h2 {
+			border: 1px solid rgba(0, 0, 0, 0);
+			margin-top: 5px;
+			animation-name: draw;
+			animation-delay: 3.8s;
+			animation-duration: 1.5s;
+			color: rgba(0, 0, 0, 0);
+		}
+
+		.content h4 {
+			border: 1px solid rgba(0, 0, 0, 0);
+			margin-top: 15px;
+			animation-name: draw;
+			animation-delay: 4.2s;
+			animation-duration: 1.5s;
+			color: rgba(0, 0, 0, 0);
+		}
+
+		.overlay{
+			width: 100%;
+			height: 100%;
+			animation-name: overlay;
+			animation-delay: 2.9s;
+			animation-duration: 2s;
+			border: 1px solid #33ACB7;
+		}
+
+		.left{
+			animation-name: draw-left;
+			background-size: cover;
+			background-position: center;
+		}
+
+		.right{
+			animation-name: draw-right;
+			animation-delay: 0.25s;
+		}
+
+		@keyframes dash {
+			0%   { stroke-dashoffset: 90; }
+			40%  { fill-opacity: 0; }
+			66%  { stroke-dashoffset: 0; }
+			100% { fill-opacity: 1; stroke-dashoffset: 0;}
+		}
+
+		@keyframes draw {
+			0%   {border: 1px solid rgba(0, 0, 0, 0);transform: scale(0) rotate(20deg);}
+			25%  {border: 1px solid #33ACB7;}
+			50%  {transform: scale(1) rotate(0deg); color: rgba(0, 0, 0, 0);}
+			75%  {border: 1px solid #33ACB7;}
+			100% {border: 1px solid rgba(0, 0, 0, 0); color: #33ACB7;}
+		}
+
+		@keyframes draw-linkedin {
+			0%   {transform: scale(0) rotate(20deg);}
+			50%  {transform: scale(1) rotate(0deg);}
+			100% {transform: scale(1) rotate(0deg);}
+		}
+
+		@keyframes overlay {
+			0%   {background-color: #33ACB7; border: 1px solid #33ACB7;}
+			100% {background-color: rgba(51, 172, 183, 0.4); border: 1px solid rgba(51, 172, 183, 0.4);}
+		}
+
+		@keyframes draw-left {
+			0%   {background-color:white; transform: scale(0) rotate(20deg);}
+			50%  {background-color:white;  transform: scale(1) rotate(0deg);}
+			99%  {background-color: #33ACB7; background-image: none;}
+			100% {background-image: url("me.jpg"); }
+		}
+
+		@keyframes draw-right {
+			0%   {background-color:white; transform: scale(0) rotate(20deg); border: 1px solid #33ACB7;}
+			50%  {background-color:white; transform: scale(1) rotate(0deg); border: 1px solid #33ACB7;}
+			100% {background-color: #f6f0a9; border: 1px solid #f6f0a9;}
+		}
+	</style>
+</html>
