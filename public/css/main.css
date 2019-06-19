@@ -1,0 +1,214 @@
+* {
+  font-display: auto;
+  margin: 0;
+  padding: 0;
+  font-family: 'Merriweather', serif;
+  animation-fill-mode: both;
+  list-style-position: inside; }
+
+a {
+  background: linear-gradient(to bottom, #f3eeb0 0%, #f3eeb0 100%);
+  background-position: 0 100%;
+  background-repeat: repeat-x;
+  background-size: 4px 2px;
+  color: inherit;
+  text-decoration: none;
+  transition: all .2s; }
+
+a:hover {
+  background-size: 4px 50px;
+  color: #33ACB7; }
+
+body {
+  font-size: 1.5em;
+  overflow-x: hidden; }
+
+li {
+  margin-bottom: 1.5rem; }
+
+.linkedin {
+  width: 80px;
+  margin-top: 20px;
+  animation-name: draw_linkedin;
+  animation-delay: 2.2s;
+  animation-duration: 1s; }
+  .linkedin path {
+    stroke-dashoffset: 90;
+    stroke-dasharray: 90;
+    stroke-opacity: 1;
+    animation-name: dash;
+    animation-delay: 2.2s;
+    animation-duration: 2.5s; }
+
+.intro-wrapper {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden; }
+
+.content-wrapper {
+  width: 100vw;
+  background-color: #33ACB7;
+  animation-duration: 1s;
+  animation-name: draw-panel;
+  animation-delay: 0.5s; }
+  .content-wrapper .content-content {
+    margin: 0 auto;
+    color: #f3eeb0;
+    max-width: 800px;
+    width: 80%;
+    padding: 100px 0; }
+    .content-wrapper .content-content h1, .content-wrapper .content-content h2, .content-wrapper .content-content h4 {
+      border-color: #f3eeb0; }
+    .content-wrapper .content-content h1 {
+      animation-name: draw-yellow;
+      animation-delay: 1s;
+      animation-duration: 1.5s; }
+    .content-wrapper .content-content h2 {
+      animation-name: draw-yellow;
+      animation-delay: 1.4s;
+      animation-duration: 1.5s; }
+    .content-wrapper .content-content ul, .content-wrapper .content-content h4 {
+      animation-name: draw-yellow;
+      animation-delay: 1.8s;
+      animation-duration: 1.5s; }
+
+h1 {
+  border: 1px solid rgba(0, 0, 0, 0);
+  color: rgba(0, 0, 0, 0);
+  font-weight: 900; }
+
+h2 {
+  border: 1px solid rgba(0, 0, 0, 0);
+  margin-top: 5px;
+  color: rgba(0, 0, 0, 0); }
+
+ul, h4 {
+  border: 1px solid rgba(0, 0, 0, 0);
+  margin-top: 15px;
+  color: rgba(0, 0, 0, 0); }
+
+@media screen and (max-width: 768px) {
+  .intro-wrapper {
+    display: block; }
+    .intro-wrapper .pane {
+      height: 50vh;
+      width: 100vw; } }
+
+@media screen and (max-width: 568px) {
+  body {
+    font-size: .8em; }
+  .linkedin {
+    width: 60px; } }
+
+@media screen and (max-height: 568px) {
+  body {
+    font-size: .8em; }
+  .linkedin {
+    width: 60px; } }
+
+.pane {
+  width: 50%;
+  height: 100vh;
+  animation-duration: 1s; }
+
+.intro-content {
+  padding: 0 70px;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+  flex-flow: column;
+  color: #33ACB7; }
+  .intro-content h1 {
+    animation-name: draw;
+    animation-delay: 1s;
+    animation-duration: 1.5s; }
+  .intro-content h2 {
+    animation-name: draw;
+    animation-delay: 1.4s;
+    animation-duration: 1.5s; }
+  .intro-content ul, .intro-content h4 {
+    animation-name: draw;
+    animation-delay: 1.8s;
+    animation-duration: 1.5s; }
+
+.overlay {
+  width: 100%;
+  height: 100%;
+  animation-name: overlay;
+  animation-delay: 1s;
+  animation-duration: 2s; }
+
+.left {
+  animation-name: draw-left;
+  background-size: cover;
+  background-position: center;
+  background-color: #33ACB7; }
+
+.right {
+  animation-name: draw-panel;
+  animation-delay: 0.25s;
+  background-color: #f3eeb0; }
+
+@keyframes dash {
+  0% {
+    stroke-dashoffset: 90; }
+  40% {
+    fill-opacity: 0; }
+  66% {
+    stroke-dashoffset: 0; }
+  100% {
+    fill-opacity: 1;
+    stroke-dashoffset: 0; } }
+
+@keyframes draw {
+  0% {
+    transform: scale(0) rotate(20deg); }
+  50% {
+    transform: scale(1) rotate(0deg);
+    color: #f3eeb0;
+    border: 1px solid #33ACB7; }
+  100% {
+    border: 1px solid rgba(0, 0, 0, 0);
+    color: #33ACB7; } }
+
+@keyframes draw-yellow {
+  0% {
+    transform: scale(0) rotate(20deg); }
+  50% {
+    transform: scale(1) rotate(0deg);
+    color: #33ACB7;
+    border: 1px solid #f3eeb0; }
+  100% {
+    border: 1px solid rgba(0, 0, 0, 0);
+    color: #f3eeb0; } }
+
+@keyframes draw_linkedin {
+  0% {
+    transform: scale(0) rotate(20deg); }
+  100% {
+    transform: scale(1) rotate(0deg); } }
+
+@keyframes overlay {
+  0% {
+    background-color: #33ACB7;
+    border: 1px solid #33ACB7; }
+  100% {
+    background-color: rgba(51, 172, 183, 0.4);
+    border: 1px solid rgba(51, 172, 183, 0.4); } }
+
+@keyframes draw-left {
+  0% {
+    transform: scale(0) rotate(20deg);
+    background-image: url("me.jpg");
+    background-size: 0; }
+  99% {
+    background-image: none; }
+  100% {
+    background-image: url("../assets/me.jpg"); } }
+
+@keyframes draw-panel {
+  0% {
+    transform: scale(0) rotate(20deg); } }
