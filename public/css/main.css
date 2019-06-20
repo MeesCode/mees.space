@@ -40,6 +40,12 @@ li {
     animation-delay: 2.2s;
     animation-duration: 2.5s; }
 
+.linkedin-link {
+  transition: all .2s; }
+
+.linkedin-link:hover {
+  transform: scale(1.1); }
+
 .intro-wrapper {
   display: flex;
   width: 100vw;
@@ -50,7 +56,7 @@ li {
   width: 100px;
   margin: 0 auto;
   animation-name: appear;
-  animation-delay: 3.4s;
+  animation-delay: 2.05s;
   animation-duration: 1s; }
   .robot-container .robot {
     width: 100%; }
@@ -69,17 +75,13 @@ li {
     padding: 100px 0; }
     .content-wrapper .content-content h1, .content-wrapper .content-content h2, .content-wrapper .content-content h4 {
       border-color: #f3eeb0; }
-    .content-wrapper .content-content h1 {
-      animation-name: draw-yellow;
-      animation-delay: 2.2s;
-      animation-duration: 1.5s; }
     .content-wrapper .content-content h2 {
       animation-name: draw-yellow;
-      animation-delay: 2.6s;
+      animation-delay: 1.25s;
       animation-duration: 1.5s; }
     .content-wrapper .content-content ul, .content-wrapper .content-content h4 {
       animation-name: draw-yellow;
-      animation-delay: 3s;
+      animation-delay: 1.65s;
       animation-duration: 1.5s; }
 
 h1 {
@@ -128,7 +130,8 @@ ul, h4 {
   animation-duration: 1s; }
 
 .intro-content {
-  padding: 0 70px;
+  margin: 0 auto;
+  width: 80%;
   height: 100%;
   display: flex;
   justify-content: center;
@@ -209,10 +212,10 @@ ul, h4 {
 @keyframes overlay {
   0% {
     background-color: #33ACB7;
-    border: 1px solid #33ACB7; }
+    opacity: 1; }
   100% {
-    background-color: rgba(51, 172, 183, 0.4);
-    border: 1px solid rgba(51, 172, 183, 0.4); } }
+    background-color: #33ACB7;
+    opacity: 0.4; } }
 
 @keyframes draw-left {
   0% {

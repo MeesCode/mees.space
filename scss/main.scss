@@ -41,6 +41,7 @@ li{
   animation-name: appear;
   animation-delay: 2.2s;
   animation-duration: 1s;
+  
 
   path {
     stroke-dashoffset: 90;
@@ -50,6 +51,14 @@ li{
     animation-delay: 2.2s;
     animation-duration: 2.5s;
   }
+}
+
+.linkedin-link{
+  transition: all .2s;
+}
+
+.linkedin-link:hover{
+  transform: scale(1.1);
 }
 
 .intro-wrapper{
@@ -64,7 +73,7 @@ li{
   margin: 0 auto;
 
   animation-name: appear;
-  animation-delay: 3.4s;
+  animation-delay: 2.05s;
   animation-duration: 1s;
 
   .robot{
@@ -90,22 +99,16 @@ li{
     h1, h2, h4{
       border-color: $baby-yellow;
     }
-
-    h1{
-      animation-name: draw-yellow;
-      animation-delay: 2.2s;
-      animation-duration: 1.5s;
-    }
     
     h2{
       animation-name: draw-yellow;
-      animation-delay: 2.6s;
+      animation-delay: 1.25s;
       animation-duration: 1.5s;
     }
     
     ul, h4{
       animation-name: draw-yellow;
-      animation-delay: 3s;
+      animation-delay: 1.65s;
       animation-duration: 1.5s;
     }
 
@@ -181,7 +184,8 @@ ul, h4{
 }
 
 .intro-content{
-  padding: 0 70px;
+  margin: 0 auto;
+  width: 80%;
   height: 100%;
   display: flex;
   justify-content: center;
@@ -256,8 +260,8 @@ ul, h4{
 }
 
 @keyframes overlay {
-  0%   {background-color: $turqoise; border: 1px solid $turqoise;}
-  100% {background-color: rgba(51, 172, 183, 0.4); border: 1px solid rgba(51, 172, 183, 0.4);}
+  0%   {background-color: $turqoise; opacity: 1;}
+  100% {background-color: $turqoise; opacity: 0.4;}
 }
 
 @keyframes draw-left {
