@@ -11,11 +11,6 @@ $baby-yellow: #f3eeb0;
   list-style-position: inside;
 }
 
-// a{
-//   text-decoration-line: underline;
-//   color: inherit;
-// }
-
 a {
   background: linear-gradient(to bottom, $baby-yellow 0%, $baby-yellow 100%);
   background-position: 0 100%;
@@ -64,14 +59,17 @@ li{
   overflow: hidden;
 }
 
-.robot{
+.robot-container{
   width: 100px;
-  display: block;
   margin: 0 auto;
 
   animation-name: appear;
   animation-delay: 3.4s;
   animation-duration: 1s;
+
+  .robot{
+    width: 100%;
+  }
 }
 
 .content-wrapper{
@@ -153,7 +151,7 @@ ul, h4{
     width: 60px;
   }
 
-  .robot{
+  .robot-container{
     width: 60px;
   }
 }

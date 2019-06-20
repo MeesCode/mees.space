@@ -46,13 +46,14 @@ li {
   height: 100vh;
   overflow: hidden; }
 
-.robot {
+.robot-container {
   width: 100px;
-  display: block;
   margin: 0 auto;
   animation-name: appear;
   animation-delay: 3.4s;
   animation-duration: 1s; }
+  .robot-container .robot {
+    width: 100%; }
 
 .content-wrapper {
   width: 100vw;
@@ -108,7 +109,7 @@ ul, h4 {
     font-size: .8em; }
   .linkedin {
     width: 60px; }
-  .robot {
+  .robot-container {
     width: 60px; } }
 
 @media screen and (max-height: 568px) {
