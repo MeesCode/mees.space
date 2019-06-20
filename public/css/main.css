@@ -106,7 +106,7 @@ ul, h4 {
 
 @media screen and (max-width: 568px) {
   body {
-    font-size: .8em; }
+    font-size: 1em; }
   .linkedin {
     width: 60px; }
   .robot-container {
