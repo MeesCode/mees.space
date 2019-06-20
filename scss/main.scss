@@ -43,7 +43,7 @@ li{
 .linkedin{
   width: 80px;
   margin-top: 20px;
-  animation-name: draw_linkedin;
+  animation-name: appear;
   animation-delay: 2.2s;
   animation-duration: 1s;
 
@@ -62,6 +62,16 @@ li{
   width: 100vw;
   height: 100vh;
   overflow: hidden;
+}
+
+.robot{
+  width: 100px;
+  display: block;
+  margin: 0 auto;
+
+  animation-name: appear;
+  animation-delay: 3.4s;
+  animation-duration: 1s;
 }
 
 .content-wrapper{
@@ -85,19 +95,19 @@ li{
 
     h1{
       animation-name: draw-yellow;
-      animation-delay: 1s;
+      animation-delay: 2.2s;
       animation-duration: 1.5s;
     }
     
     h2{
       animation-name: draw-yellow;
-      animation-delay: 1.4s;
+      animation-delay: 2.6s;
       animation-duration: 1.5s;
     }
     
     ul, h4{
       animation-name: draw-yellow;
-      animation-delay: 1.8s;
+      animation-delay: 3s;
       animation-duration: 1.5s;
     }
 
@@ -140,6 +150,10 @@ ul, h4{
   }
 
   .linkedin{
+    width: 60px;
+  }
+
+  .robot{
     width: 60px;
   }
 }
@@ -230,7 +244,7 @@ ul, h4{
   100% {border: 1px solid rgba(0, 0, 0, 0); color: $baby-yellow;}
 }
 
-@keyframes draw_linkedin {
+@keyframes appear {
   0%   {transform: scale(0) rotate(20deg);}
   100% {transform: scale(1) rotate(0deg);}
 }
@@ -241,7 +255,7 @@ ul, h4{
 }
 
 @keyframes draw-left {
-  0%   {transform: scale(0) rotate(20deg); background-image: url("me.jpg"); background-size: 0;} 
+  0%   {transform: scale(0) rotate(20deg); background-image: url("../assets/me.jpg"); background-size: 0;} 
   99%  { background-image: none;}
   100% {background-image: url("../assets/me.jpg"); }
 }
