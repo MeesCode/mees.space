@@ -154,6 +154,10 @@ ul, h4{
   .robot-container{
     width: 60px;
   }
+
+  a{
+    background-size: 4px 1px;
+  }
 }
 
 @media screen and (max-height: 568px) {
@@ -163,6 +167,10 @@ ul, h4{
 
   .linkedin{
     width: 60px;
+  }
+
+  a{
+    background-size: 4px 1px;
   }
 }
 

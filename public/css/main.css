@@ -110,13 +110,17 @@ ul, h4 {
   .linkedin {
     width: 60px; }
   .robot-container {
-    width: 60px; } }
+    width: 60px; }
+  a {
+    background-size: 4px 1px; } }
 
 @media screen and (max-height: 568px) {
   body {
     font-size: .8em; }
   .linkedin {
-    width: 60px; } }
+    width: 60px; }
+  a {
+    background-size: 4px 1px; } }
 
 .pane {
   width: 50%;
