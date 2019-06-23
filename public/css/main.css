@@ -53,7 +53,7 @@ li {
   overflow: hidden; }
 
 .robot-container {
-  width: 250px;
+  width: 150px;
   margin: 0 auto;
   animation-name: appear;
   animation-delay: 2.05s;
@@ -112,7 +112,7 @@ ul, h4 {
   .linkedin {
     width: 60px; }
   .robot-container {
-    width: 160px; }
+    width: 120px; }
   a {
     background-size: 4px 1px; } }
 
