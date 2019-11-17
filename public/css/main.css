@@ -49,7 +49,7 @@ li {
 .intro-wrapper {
   display: flex;
   width: 100vw;
-  height: 95vh;
+  height: calc(100vh - 50px);
   overflow: hidden; }
 
 .robot-container {
@@ -62,10 +62,10 @@ li {
     width: 100%; }
 
 .arrow {
-  width: 5vw;
+  width: 50px;
   margin: 0 auto; }
   .arrow .svg {
-    width: 5vw;
+    width: 50px;
     position: absolute;
     animation-name: wobble;
     animation-delay: 0s;
@@ -192,9 +192,9 @@ ul, h4 {
 
 @keyframes wobble {
   0% {
-    padding-top: 1.2vh; }
+    padding-top: 12px; }
   100% {
-    padding-top: 1.8vh; } }
+    padding-top: 17px; } }
 
 @keyframes draw {
   0% {

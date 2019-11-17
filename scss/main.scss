@@ -64,7 +64,7 @@ li{
 .intro-wrapper{
   display: flex;
   width: 100vw;
-  height: 95vh;
+  height: calc(100vh - 50px);
   overflow: hidden;
 }
 
@@ -82,11 +82,11 @@ li{
 }
 
 .arrow {
-  width: 5vw;
+  width: 50px;
   margin: 0 auto;
 
   .svg{
-    width: 5vw;
+    width: 50px;
     position: absolute;
     animation-name: wobble;
     animation-delay: 0s;
@@ -255,8 +255,8 @@ ul, h4{
 }
 
 @keyframes wobble {
-  0%   { calc(10vh / 2 - 5px) }
-  100% { calc(10vh / 2 + 5px) }
+  0%   { padding-top: 12px }
+  100% { padding-top: 17px }
 }
 
 @keyframes draw {
