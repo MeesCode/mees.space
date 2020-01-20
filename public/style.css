@@ -4,28 +4,34 @@
 :root {
 	--accent: #33ACB7;
 	--background: #222129;
+	--app-background: #242930;
 	--border-color: hsla(0, 0%, 100%, 0.1);
 	--color: #fff;
-	--phoneWidth: (max-width:684px);
-	--tabletWidth: (max-width:900px)
 }
-html {
-	line-height: 1.6
+body {
+	background-color: var(--background);
+	color: var(--color);
+	font-family: Fira Code, Monaco, Consolas, Ubuntu Mono, monospace;
+	font-feature-settings: "liga", "tnum", "case", "calt", "zero", "ss01", "locl", "calt";
+	font-size: 1rem;
+	font-variant-ligatures: contextual;
+	line-height: 1.54;
+	margin: 0;
+	padding: 0;
+	text-rendering: optimizeLegibility
 }
-a {
-	color: var(--accent);
-	text-decoration: none
+li{
+	margin-top: 0.5em;
 }
-a:hover {
-	color: #fff;
-	transition: color .8s
+ol{
+	list-style-type: hiragana;
+}
+h1 {
+	font-size: 1.4rem;
 }
 .robot-container {
   width: 150px;
-  margin: 5em auto 0 auto;
-  animation-name: appear;
-  animation-delay: 1.05s;
-	animation-duration: 1s; 
+  margin: 2em auto;
 }
 .robot-container .robot {
 	width: 100%; 
@@ -41,52 +47,38 @@ a:hover {
 }
 .post-content a:hover {
   background-size: 4px 50px;
-	color: white; 
+	color: var(--color); 
 }
 .app-header {
 	padding: 2.5em;
-	background: #242930;
+	padding-top: 4rem;
+	background: var(--app-background);
 	text-align: center
 }
 .app-header-avatar {
 	max-width: 15rem;
 	max-height: 15rem;
 	border-radius: 100%;
-	border: .5rem solid var(--accent)
+	border: .4rem solid var(--accent);
 }
 .app-container {
-	padding: 3rem
-}
-.app-header-social {
-	font-size: 2em;
-}
-.app-header-social a {
-	margin: 0 .1em
+	padding: 3rem;
+	padding-top: 4rem;
+	max-width: 65rem;
+	margin-left: 20rem;
 }
 @media(min-width:940px) {
 	.app-header {
 		position: fixed;
-		top: 0;
-		left: 0;
 		width: 20rem;
 		min-height: 100vh
 	}
 }
-.app-container {
-	max-width: 65rem;
-	margin-left: 20rem
-}
 @media (max-width:940px) {
-    .app-container {
-        margin-left: 0rem;
-	padding: 3rem 1rem 3rem 1rem;
-    }
-}
-.icon {
-	display: block-inline;
-	width: 1em;
-	height: 1em;
-	vertical-align: -.125em
+  .app-container {
+    margin-left: 0rem;
+		padding: 3rem 1rem 3rem 1rem;
+  }
 }
 .header {
 	display: flex;
@@ -112,49 +104,8 @@ a:hover {
 .logo {
 	align-items: center;
 	background: var(--accent);
-	color: #000;
 	display: flex;
 	padding: 5px 10px;
-	text-decoration: none
-}
-body {
-	background-color: #222129;
-	color: white;
-	color: var(--color);
-	font-family: Fira Code, Monaco, Consolas, Ubuntu Mono, monospace;
-	font-feature-settings: "liga", "tnum", "case", "calt", "zero", "ss01", "locl", "calt";
-	font-size: 1rem;
-	font-variant-ligatures: contextual;
-	line-height: 1.54;
-	margin: 0;
-	padding: 0;
-	text-rendering: optimizeLegibility
-}
-@media (max-width:683px) {
-	body {
-		font-size: 1rem
-	}
-}
-li{
-	margin-top: 0.5em;
-}
-h1 {
-	line-height: 1.3
-}
-h1:not(first-child) {
-	margin-top: 40px
-}
-h1 {
-	font-size: 1.4rem
-}
-a {
-	color: inherit
-}
-img {
-	max-width: 100%
-}
-p {
-	margin-bottom: 20px
 }
 .container {
 	display: flex;
@@ -167,13 +118,13 @@ p {
 	}
 }
 .content {
-	display: flex
+	display: flex;
 }
 .post {
 	margin: 20px auto;
 	padding: 20px 0;
 	text-align: left;
-	width: 100%
+	width: 100%;
 }
 @media (max-width:899px) {
 	.post {
@@ -196,9 +147,12 @@ p {
 	position: absolute;
 	width: 100%
 }
-.post-title a {
-	text-decoration: none
+.icon {
+	stroke-dashoffset: 90;
+	stroke-dasharray: 90;
+	stroke-opacity: 1;
+	transition: stroke-dashoffset ease .6s 
 }
-.post-content {
-	margin-top: 30px
+.icon:hover{
+	stroke-dashoffset: 0; 
 }
