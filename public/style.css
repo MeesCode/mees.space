@@ -30,23 +30,23 @@ h1 {
 	font-size: 1.4rem;
 }
 .robot-container {
-  width: 150px;
-  margin: 2em auto;
+	width: 150px;
+	margin: 2em auto;
 }
 .robot-container .robot {
 	width: 100%; 
 }
 .post-content a{
 	background: linear-gradient(to bottom, var(--accent) 0%, var(--accent) 100%);
-  background-position: 0 100%;
-  background-repeat: repeat-x;
-  background-size: 4px 1px;
-  color: var(--accent);
-  text-decoration: none;
-  transition: all .2s;
+	background-position: 0 100%;
+	background-repeat: repeat-x;
+	background-size: 4px 1px;
+	color: var(--accent);
+	text-decoration: none;
+	transition: all .2s;
 }
 .post-content a:hover {
-  background-size: 4px 50px;
+	background-size: 4px 50px;
 	color: var(--color); 
 }
 .app-header {
@@ -75,10 +75,10 @@ h1 {
 	}
 }
 @media (max-width:940px) {
-  .app-container {
-    margin-left: 0rem;
+	.app-container {
+    		margin-left: 0rem;
 		padding: 3rem 1rem 3rem 1rem;
-  }
+	}
 }
 .header {
 	display: flex;
