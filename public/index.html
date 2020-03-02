@@ -14,11 +14,11 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha256-jl1+DOsSs9uABTKppOJ2GF8kXoc3XQzBtFFyS0i9Xoo=" crossorigin="anonymous"></script>
 	
 		<script>
+			// content linked directly to my nextcloud instance for easy editing
 			fetch("https://mees.space/content.md")
 			.then(response => response.text())
 			.then(data => {
 				let el = document.getElementById("content")
-				console.log(data)
 				let converter = new showdown.Converter(),
 				text      = data,
 				html      = converter.makeHtml(text);
