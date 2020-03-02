@@ -36,7 +36,7 @@ h1 {
 .robot-container .robot {
 	width: 100%; 
 }
-.post-content a{
+#content a{
 	background: linear-gradient(to bottom, var(--accent) 0%, var(--accent) 100%);
 	background-position: 0 100%;
 	background-repeat: repeat-x;
@@ -45,7 +45,7 @@ h1 {
 	text-decoration: none;
 	transition: all .2s;
 }
-.post-content a:hover {
+#content a:hover {
 	background-size: 4px 50px;
 	color: var(--color); 
 }
@@ -117,29 +117,21 @@ h1 {
 		padding: 20px
 	}
 }
-.content {
-	display: flex;
-}
-.post {
-	margin: 20px auto;
-	padding: 20px 0;
-	text-align: left;
-	width: 100%;
-}
 @media (max-width:899px) {
-	.post {
+	#content {
 		max-width: 660px
 	}
 }
-.post-title {
+#content h1 {
 	--border: 3px dotted var(--accent);
 	border-bottom: var(--border);
 	color: var(--accent);
-	margin: 0 0 15px;
+	margin: 20 0 15px;
 	padding-bottom: 15px;
+	padding-top: 20px;
 	position: relative
 }
-.post-title:after {
+#content h1:after {
 	border-bottom: var(--border);
 	bottom: 2px;
 	content: "";
