@@ -2,7 +2,7 @@
 <html lang="en-us">
 	<head>
 		<title>Mees Brinkhuis - Developer Extraordinaire</title>
-		<meta charset="utf-8"/>
+		<meta charset="utf-8"/i>
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link href="https://fonts.googleapis.com/css?family=Merriweather:400" rel="stylesheet">
 		<link href="style.css" rel="stylesheet">
@@ -11,10 +11,25 @@
 		<link rel="shortcut icon" type="image/png" href="favicon-192.png">
 		<link rel="shortcut icon" sizes="192x192" href="favicon-192.png">
 		<link rel="apple-touch-icon" href="favicon-192.png">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha256-jl1+DOsSs9uABTKppOJ2GF8kXoc3XQzBtFFyS0i9Xoo=" crossorigin="anonymous"></script>
+	
+		<script>
+			// content linked directly to my nextcloud instance for easy editing
+			fetch(`${window.location.href.split('?')[0]}/content/home.md`)
+			.then(response => response.text())
+			.then(data => {
+				let el = document.getElementById("content")
+				let converter = new showdown.Converter(),
+				text      = data,
+				html      = converter.makeHtml(text);
+				el.innerHTML = html
+			})
+		</script>
+
 	</head>
 <body>
-	<header class="app-header">
-		<img class="app-header-avatar" src="mees.jpg" alt="Mees Brinkhuis" />
+	<aside class="app-header">
+		<img class="app-header-avatar" src="/content/mees.jpg" alt="Mees Brinkhuis" />
 		<h1>Mees Brinkhuis</h1>
 		<p>Developer Extraoridnaire</p>
 		<div class="app-header-social">
@@ -41,10 +56,10 @@
 				</svg>
 			</a>
 		</div>
-	</header>
+	</aside>
 	<main class="app-container">
 		<div class="container">
-			<header class="header">
+			<div class="header">
 				<div class="header__inner">
 					<div class="header__logo">
 						<div class="logo">
@@ -52,60 +67,15 @@
 						</div>
 					</div>
 				</div>
-			</header>
-			<div class="content">
-
-				<div class="posts">
-					<div class="post on-list">
-						<h1 class="post-title">who i am</h1>
-						<div class="post-content">
-							<p>
-								I am a student at the Delft University of Technology, an all-round web developer, and also a massive robotics enthusiast. 
-							</p>
-						</div>
-					</div>
-
-					<div class="post on-list">
-						<h1 class="post-title">what i do</h1>
-						<div class="post-content">
-							<ol>
-								<li>Currently I am a student at the <a href="https://www.tudelft.nl/en/" target="_blank">Delft University of Technology</a> where I study computer science and engineering.</li>
-								<li>Since 2017 I've had a part-time job as a web developer at <a href="https://happyflow.io/team/mees-brinkhuis/" target="_blank">HappyFlow</a>, the Hague.</li>
-								<li>I have done a <a href="https://www.delta.tudelft.nl/article/robot-minor-super-intensief-voor-studenten" target="_blank">minor</a> in robotics. During this minor we built a life-size interactive robotic guide named IONA for the Sience Centre, Delft.</li>
-								<li>In the past I have competed in the <a href="https://robocupjunior.nl" target="_blank">RoboCupJunior</a> national and world championships, of which i won the former. Nowadays I am on <a href="https://www.robocupjunior.nl/organisatie/" target="_blank">the board</a> that organises this national championship.</li>
-								<li>Together with a team consisting of university personnel and students I am working on a robotics platform to help teach highschoolers the art of programming.</li>
-								<li>I am a member of the <a href="https://ngrsa.nl/" target="_blank">Robotics Study Association</a> (RSA) that aims to connect students in the robotics community to the industry.</li>
-								<li>For my final bachelor thesis I have worked on computer vision software for warehouse based flying drones at <a href="https://eonics.nl/" target="_blank">Eonics</a>, the  Hague.
-							</ol>
-
-						</div>
-					</div>
-
-					<div class="posts">
-						<div class="post on-list">
-							<h1 class="post-title">quick words</h1>
-							<div class="post-content">
-								<p>
-									I like to play around with provided assets like images and documents. However, I do not own licenses to the Microsoft and/or Adobe software that is often required for these kinds of things. FOSS software is often enough for me. I wish more assets were provided in non-proprietary file formats.
-								</p>
-
-								<p>
-									I give funny looks to people who believe that modern is always better. There is a time and place for everything, but when your web page takes a full minute to load you must reassess your priorities.
-								</p>
-
-								<p>
-									Tabs are always better than spaces, except for aligning stuff. Linux kernel style is the only proper way to place brackets. Vim is better than Emacs, but only because no one except Richard bothers with the steep learning curve. I prefer Gnome over KDE. You can be an expert on any programming language and still dislike said language, no shame.
-								</p>
-							</div>
-						</div>
-
-					<div class="robot-container">
-						<img class="robot" src="robot.svg">
-					</div>
-
-				</div>
-
 			</div>
+
+			<article id="content">
+			</article>
+
+			<div class="robot-container">
+				<img class="robot" src="robot.svg">
+			</div>
+
 		</div>
 	</main>
 </body>
