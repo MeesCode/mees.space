@@ -63,7 +63,7 @@ h1 {
 	max-width: 15rem;
 	max-height: 15rem;
 	border-radius: 100%;
-	border: .4rem solid var(--accent);
+	border: 3px solid var(--accent);
 }
 
 .app-container {
