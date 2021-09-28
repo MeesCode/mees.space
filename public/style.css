@@ -55,7 +55,7 @@ h1 {
 .app-header {
 	padding: 2.5em;
 	padding-top: 60px;
-	background: var(--app-background);
+	background: var(--background);
 	text-align: center
 }
 
