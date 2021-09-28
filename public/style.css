@@ -1,6 +1,7 @@
 * {
 	box-sizing: border-box
 }
+
 :root {
 	--accent: #33ACB7;
 	--background: #222129;
@@ -8,6 +9,7 @@
 	--border-color: hsla(0, 0%, 100%, 0.1);
 	--color: #fff;
 }
+
 body {
 	background-color: var(--background);
 	color: var(--color);
@@ -20,22 +22,21 @@ body {
 	padding: 0;
 	text-rendering: optimizeLegibility
 }
+
 li{
 	margin-top: 0.5em;
 }
-ol{
-	list-style-type: hiragana;
+
+ul{
+	list-style-image: url('chevron.svg');
+	list-style-position: outside;
+	padding-left: 25px;
 }
+
 h1 {
 	font-size: 1.4rem;
 }
-.robot-container {
-	width: 150px;
-	margin: 2em auto;
-}
-.robot-container .robot {
-	width: 100%; 
-}
+
 #content a{
 	background: linear-gradient(to bottom, var(--accent) 0%, var(--accent) 100%);
 	background-position: 0 100%;
@@ -45,92 +46,86 @@ h1 {
 	text-decoration: none;
 	transition: all .2s;
 }
+
 #content a:hover {
 	background-size: 4px 50px;
 	color: var(--color); 
 }
+
 .app-header {
 	padding: 2.5em;
-	padding-top: 4rem;
+	padding-top: 60px;
 	background: var(--app-background);
 	text-align: center
 }
+
 .app-header-avatar {
 	max-width: 15rem;
 	max-height: 15rem;
 	border-radius: 100%;
 	border: .4rem solid var(--accent);
 }
+
 .app-container {
 	padding: 3rem;
-	padding-top: 4rem;
+	padding-top: 40px;
 	max-width: 65rem;
 	margin-left: 20rem;
 }
+
 @media(min-width:940px) {
 	.app-header {
 		position: fixed;
 		width: 20rem;
 		min-height: 100vh
 	}
+
 }
+
 @media (max-width:940px) {
 	.app-container {
-    		margin-left: 0rem;
+    	margin-left: 0rem;
 		padding: 3rem 1rem 3rem 1rem;
 	}
+
 }
+
 .header {
 	display: flex;
 	flex-direction: column;
 	position: relative
 }
-.header__inner {
-	align-items: center;
-	display: flex;
-	justify-content: space-between
-}
-.header__logo {
-	display: flex;
-	flex: 1
-}
-.header__logo:after {
-	background: repeating-linear-gradient(90deg, var(--accent), var(--accent) 2px, transparent 0, transparent 10px);
-	content: "";
-	display: block;
-	right: 10px;
-	width: 100%
-}
-.logo {
-	align-items: center;
-	background: var(--accent);
-	display: flex;
-	padding: 5px 10px;
-}
+
 .container {
 	display: flex;
 	flex-direction: column;
 	max-width: 864px;
 }
+
 @media (max-width:683px) {
 	.container {
 		padding: 20px
 	}
+
 }
+
 @media (max-width:899px) {
 	#content {
 		max-width: 660px
 	}
+
 }
+
 #content h1 {
 	--border: 3px dotted var(--accent);
 	border-bottom: var(--border);
 	color: var(--accent);
-	margin: 20 0 15px;
+	margin: 0 0 15px;
 	padding-bottom: 15px;
 	padding-top: 20px;
 	position: relative
 }
+
 #content h1:after {
 	border-bottom: var(--border);
 	bottom: 2px;
@@ -139,12 +134,27 @@ h1 {
 	position: absolute;
 	width: 100%
 }
+
 .icon {
 	stroke-dashoffset: 90;
 	stroke-dasharray: 90;
 	stroke-opacity: 1;
 	transition: stroke-dashoffset ease .6s 
 }
+
 .icon:hover{
 	stroke-dashoffset: 0; 
+}
+
+@keyframes blink {
+	0%, 100% {
+		color: transparent;
+	}
+	50% {
+		color: #fff;
+	}
+}
+
+.blink{
+	animation: 1s blink step-end infinite;
 }
