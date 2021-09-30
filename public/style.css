@@ -70,7 +70,7 @@ h1 {
 	position: absolute;
 	width: 240px;
 	height: 240px;
-	animation: morph 20s ease-in-out infinite;
+	animation: morph 20s ease-in-out infinite, rotate 178s linear infinite;
 	border: 1px solid var(--accent);
 	animation-direction: alternate;
 	border-radius: 100%;
@@ -152,6 +152,16 @@ h1 {
 
 	100% {
 		border-radius:  55% 45% 35% 58% / 55% 35% 58% 45%;
+	} 
+}
+
+@keyframes rotate {
+	0% {
+		transform: rotate(0deg);
+	} 
+
+	100% {
+		transform: rotate(359deg);
 	} 
 }
 
