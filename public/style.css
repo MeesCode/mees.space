@@ -67,20 +67,18 @@ h1 {
 }
 
 .app-header-avatar-border {
-	position: fixed;
+	position: absolute;
 	width: 240px;
 	height: 240px;
 	animation: morph 20s ease-in-out infinite;
-	border: 3px solid var(--accent);
+	border: 1px solid var(--accent);
 	animation-direction: alternate;
 	border-radius: 100%;
-	z-index: 20;
 	background-color: var(--accent);
 }
 
 .app-header-avatar {
 	position: relative;
-	z-index: 50;
 	max-width: 240px;
 	max-height: 240px;
 	border-radius: 100%;
@@ -137,7 +135,7 @@ h1 {
 
 @keyframes morph {
 	0% {
-		border-radius:  55% 45% 35% 65% / 55% 35% 65% 35%;
+		border-radius:  55% 45% 35% 58% / 55% 35% 58% 35%;
 	} 
 
 	25% {
@@ -145,7 +143,7 @@ h1 {
 	}
 
 	50% {
-		border-radius:  35% 55% 65% 45% / 50% 55% 35% 55%;
+		border-radius:  35% 55% 58% 45% / 50% 55% 35% 55%;
 	}
 
 	75% {
@@ -153,7 +151,7 @@ h1 {
 	}
 
 	100% {
-		border-radius:  55% 45% 35% 65% / 55% 35% 65% 45%;
+		border-radius:  55% 45% 35% 58% / 55% 35% 58% 45%;
 	} 
 }
 
