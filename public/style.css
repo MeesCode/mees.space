@@ -26,7 +26,7 @@ li{
 ul{
 	list-style-image: url('chevron.svg');
 	list-style-position: outside;
-	padding-left: 24px;
+	padding-left: 22px;
 }
 
 h1 {
@@ -70,10 +70,8 @@ h1 {
 	position: absolute;
 	width: 240px;
 	height: 240px;
-	animation: morph 20s ease-in-out infinite, rotate 178s linear infinite;
+	animation: morph 40s infinite alternate ease-in-out, rotate 178s infinite normal linear;
 	border: 1px solid var(--accent);
-	animation-direction: alternate;
-	border-radius: 100%;
 	background-color: var(--accent);
 }
 
@@ -138,12 +136,12 @@ h1 {
 		border-radius:  55% 45% 35% 58% / 55% 35% 58% 35%;
 	} 
 
-	25% {
-		border-radius:  50% 45% 50% 55% / 55% 35% 55% 45%;
+	20% {
+		border-radius:  35% 55% 58% 45% / 50% 55% 35% 55%;
 	}
 
 	50% {
-		border-radius:  35% 55% 58% 45% / 50% 55% 35% 55%;
+		border-radius:  50% 45% 50% 55% / 55% 35% 55% 45%;
 	}
 
 	75% {
@@ -156,12 +154,8 @@ h1 {
 }
 
 @keyframes rotate {
-	0% {
-		transform: rotate(0deg);
-	} 
-
 	100% {
-		transform: rotate(359deg);
+		transform: rotate(360deg);
 	} 
 }
 
