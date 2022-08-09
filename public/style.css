@@ -37,6 +37,10 @@ h1 {
 	font-size: 1.4rem;
 }
 
+#content img{
+	width: 100%;
+}
+
 #content a{
 	background: linear-gradient(to bottom, var(--accent) 0%, var(--accent) 100%);
 	background-position: 0 100%;
