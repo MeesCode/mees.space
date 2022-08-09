@@ -36,13 +36,21 @@ class Minimap {
         this.scrollHandler()
     }
 
+    setReflowInterval(millis){
+        clearInterval(this.interval)
+	this.interval = setInterval(() => {
+		this.scrollHandler()
+		this.resizeHandler()
+        }, millis)
+    }
+
     resizeHandler(){
         // update width
         this.width = this.element.clientWidth
         document.documentElement.style.setProperty('--minimap-width', `${this.width}px`);
 
         // update overlay height
-        this.overlay.style.height = `${this.map.scrollHeight}px`
+        this.overlay.style.height = `${this.map.scrollHeight * this.scale}px`
 
         // update viewport height
         this.viewportheight = (window.innerHeight / this.element.scrollHeight) * (this.map.scrollHeight * this.scale)
