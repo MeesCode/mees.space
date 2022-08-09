@@ -25,7 +25,7 @@
 				let el = document.getElementById("content")
 				let converter = new showdown.Converter()
 				let html = converter.makeHtml(data)
-				html = html.replace("<img src=\"", "<img src=\"content/")
+				html = html.replaceAll("<img src=\"", "<img src=\"content/")
 				el.innerHTML = html
 
 				let minimap = new Minimap(document.getElementById('article-wrapper'), 0.15)
