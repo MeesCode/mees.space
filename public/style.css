@@ -68,6 +68,10 @@ h1 {
 		position: static !important;
 	}
 
+	.minimap, .minimap-overlay, .minimap-viewport {
+		display: none;
+	}
+
 }
 
 .app-header-avatar-border {
