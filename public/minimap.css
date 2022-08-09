@@ -1,0 +1,25 @@
+
+.minimap {
+    transform: scale(var(--minimap-scale));
+    width: var(--minimap-width);
+    position: fixed;
+    right: calc(-0.5 * (var(--minimap-width) - (var(--minimap-width) * var(--minimap-scale))));
+    z-index: 100;
+}
+
+.minimap-overlay {
+    width: calc(var(--minimap-width) * var(--minimap-scale));
+    position: fixed;
+    right: 0px;
+    z-index: 101;
+    cursor: pointer;
+}
+
+.minimap-viewport {
+    width: calc(var(--minimap-width) * var(--minimap-scale));
+    position: fixed;
+    right: 0px;
+    background-color: rgba(255, 255, 255, 0.2);
+    z-index: 102;
+    cursor: grab;
+}

@@ -19,6 +19,10 @@ body {
 	font-family: Fira Code, Monaco, Consolas, Ubuntu Mono, monospace;
 }
 
+#content{
+	padding: 70px 20px 0px 20px;
+}
+
 li{
 	margin-top: 12px;
 }
@@ -83,7 +87,6 @@ h1 {
 }
 
 .app-container {
-	padding: 70px 20px 70px 20px;
 	max-width: 900px;
 	position: absolute;
 	top: 0px;
@@ -161,4 +164,5 @@ h1 {
 
 .blink{
 	animation: 1s blink step-end infinite;
+	padding: 0 0 70px 20px;
 }

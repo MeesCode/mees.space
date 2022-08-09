@@ -14,6 +14,8 @@
 		<link rel="shortcut icon" sizes="192x192" href="favicon-192.png">
 		<link rel="apple-touch-icon" href="favicon-192.png">
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha256-jl1+DOsSs9uABTKppOJ2GF8kXoc3XQzBtFFyS0i9Xoo=" crossorigin="anonymous"></script>
+		<link href="minimap.css" rel="stylesheet">
+		<script src="minimap.js"></script>
 	
 		<script>
 			// content linked directly to my nextcloud instance for easy editing
@@ -21,10 +23,13 @@
 			.then(response => response.text())
 			.then(data => {
 				let el = document.getElementById("content")
-				let converter = new showdown.Converter(),
-				text = data,
-				html = converter.makeHtml(text);
+				let converter = new showdown.Converter()
+				let html = converter.makeHtml(data)
+				html = html.replace("<img src=\"", "<img src=\"content/")
 				el.innerHTML = html
+
+				let minimap = new Minimap(document.getElementById('article-wrapper'), 0.15)
+				minimap.init()
 			})
 		</script>
 
@@ -60,9 +65,9 @@
 				</a>
 			</div>
 		</aside>
-		<main class="app-container">
+		<main id="article-wrapper" class="app-container">
 
-			<article id="content"><h1 id="whoiam">who i am</h1>
+			<article id="content">
 			</article>
 
 			<span class="blink">█</span>
