@@ -50,6 +50,8 @@ h1 {
 	color: var(--accent);
 	text-decoration: none;
 	transition: all .2s;
+	padding: 0 5px;
+	margin: 0 -5px;
 }
 
 #content a:hover {
@@ -72,20 +74,26 @@ h1 {
 	.app-header{
 		position: static !important;
 	}
+}
 
+@media (max-width:1375px) {
 	.minimap, .minimap-overlay, .minimap-viewport {
 		display: none;
 	}
-
 }
 
 .app-header-avatar-border {
 	position: absolute;
-	width: 240px;
-	height: 240px;
+	width: 250px;
+	height: 250px;
 	animation: morph 40s infinite alternate ease-in-out, rotate 178s infinite normal linear;
-	border: 1px solid var(--accent);
-	background-color: var(--accent);
+	border: 1px solid #4bb9c4a1;
+	background-color: #4bb9c4a1;
+	margin: -5px 0 0 -5px;
+}
+
+.app-header-avatar-border.alternate {
+	animation: morph 30s infinite alternate-reverse ease-in-out, rotate 53s infinite reverse linear;
 }
 
 .app-header-avatar {
@@ -124,14 +132,11 @@ h1 {
 }
 
 .icon {
-	stroke-dashoffset: 90;
-	stroke-dasharray: 90;
-	stroke-opacity: 1;
-	transition: stroke-dashoffset ease .6s 
+	transition: .1s ease all;
 }
 
 .icon:hover{
-	stroke-dashoffset: 0; 
+	transform: scale(1.1);
 }
 
 @keyframes blink {

@@ -16,63 +16,52 @@
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js" integrity="sha256-jl1+DOsSs9uABTKppOJ2GF8kXoc3XQzBtFFyS0i9Xoo=" crossorigin="anonymous"></script>
 		<link href="minimap.css" rel="stylesheet">
 		<script src="minimap.js"></script>
-	
-		<script>
-			// content linked directly to my nextcloud instance for easy editing
-			fetch(`${window.location.href.split('?')[0]}/content/home.md`)
-			.then(response => response.text())
-			.then(data => {
-				let el = document.getElementById("content")
-				let converter = new showdown.Converter()
-				let html = converter.makeHtml(data)
-				html = html.replaceAll("<img src=\"", "<img src=\"content/")
-				el.innerHTML = html
-
-				let minimap = new Minimap(document.getElementById('article-wrapper'), 0.15)
-				minimap.init()
-				minimap.setReflowInterval(500)
-			})
-		</script>
-
 	</head>
 	
 	<body>
 		<aside class="app-header">
+			<img class="app-header-avatar-border alternate" />
 			<img class="app-header-avatar-border" />
-			<img class="app-header-avatar" src="content/mees.jpg" alt="Mees Brinkhuis" />
+			<img class="app-header-avatar" src="mees.jpg" alt="Mees Brinkhuis" />
 			<h1>Mees Brinkhuis</h1>
 			<div class="app-header-social">
 				<a target="_blank" href="https://www.linkedin.com/in/mees-brinkhuis/" rel="noreferrer noopener">
-					<svg class="icon" width="42" height="42" version="1.1" viewBox="0 0 24.5 24.5" xmlns="http://www.w3.org/2000/svg">
-						<g>
-							<g transform="matrix(.98 0 0 .98 .245 .245)" fill="none" stroke="#33acb7">
-								<path d="m5.25-0.25c-3.0313 0-5.5 2.4687-5.5 5.5v14c0 3.0313 2.4687 5.5 5.5 5.5h14c3.0322 0 5.5-2.4688 5.5-5.5v-14c0-3.0312-2.4678-5.5-5.5-5.5zm0 1h14c2.4918 0 4.5 2.0092 4.5 4.5v14c0 2.4908-2.0082 4.5-4.5 4.5h-14c-2.4907 0-4.5-2.0093-4.5-4.5v-14c0-2.4907 2.0093-4.5 4.5-4.5z" color="#000000"  fill="#fffff9" stroke="none" />
-							</g>
-							<g transform="matrix(.98 0 0 .98 .245 .245)" fill="#fffff9" >
-								<path d="m4.75 7.75v12h4v-12zm1 1h2v10h-2z" color="#000000" />
-								<path d="m6.75 2.9531c-1.2386 0-2.25 1.0233-2.25 2.2656s1.0114 2.2637 2.25 2.2637c1.2393 0 2.25-1.0217 2.25-2.2637 0-1.2423-1.0114-2.2656-2.25-2.2656zm0 1c0.6934 0 1.25 0.55993 1.25 1.2656 0 0.70603-0.55532 1.2637-1.25 1.2637-0.6934 0-1.25-0.55798-1.25-1.2637s0.5566-1.2656 1.25-1.2656z" color="#000000" />
-								<path d="m9.75 7.75v12h4v-6.1035c0-1.3423 0.78526-1.9084 1.5156-1.9316 0.36518-0.01164 0.71773 0.11843 0.99414 0.41406 0.27641 0.29563 0.49023 0.77455 0.49023 1.5176v6.1035h4v-7.2598c0-2.8043-1.6073-4.3454-3.3867-4.668-1.3442-0.24369-2.6329 0.28203-3.6133 1.1367v-1.209zm1 1h2v1.2656l0.93945 0.23633c0.56759-1.0514 2.1225-1.6959 3.4941-1.4473s2.5664 1.2369 2.5664 3.6855v6.2598h-2v-5.1035c0-0.94097-0.28618-1.6946-0.75977-2.2012-0.47359-0.50652-1.121-0.74875-1.7559-0.72852-1.2696 0.040469-2.4844 1.159-2.4844 2.9297v5.1035h-2z" color="#000000" />
-							</g>
-							<g transform="matrix(.98 0 0 .98 .245 .245)" fill="none" stroke="#33acb7">
-								<path d="m19.25 0.25h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5z" fill="none" stroke="#33acb7"/>
-							</g>
-							<g transform="matrix(.98 0 0 .98 .245 .245)" fill="none" stroke="#33acb7">
-								<path d="m8.25 19.25h-3v-11h3z"/>
-								<path d="m6.75 6.982c-0.966 0-1.75-0.79-1.75-1.764s0.784-1.764 1.75-1.764 1.75 0.79 1.75 1.764-0.783 1.764-1.75 1.764z"/>
-								<path d="m20.25 19.25h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476z"/>
-							</g>
-						</g>
-					</svg>
+					<img class="icon" src="linkedin.svg" alt="linkedin" />
 				</a>
 			</div>
 		</aside>
 		<main id="article-wrapper" class="app-container">
 
 			<article id="content">
+				<h1 id="whoiam">who i am</h1>
+				<p>I am a software developer based in the Netherlands. I love working with embedded software and have a few years of full-stack development under my belt. Most of my time is spent tinkering with electronics, recreational programming and side projects. I'm a massive robotics enthusiast and have had the luck of meeting others who share this passion.</p>
+				<p>I have a decent collection of musical instruments, most of which i don't know how to play. The exception being the trombone and bass guitar.</p>
+				<h1 id="whatido">what i do</h1>
+				<ul>
+				<li>I have followed the <a href="https://www.tudelft.nl/onderwijs/opleidingen/masters/es/msc-embedded-systems/">Embedded Systems</a> masters programme at the <a href="https://www.tudelft.nl/en/">Delft University of Technology</a>, but about halfway through I decided to pursue a full-time career instead. In 2020 I was admitted the Computer Science and Engineering bachelors degree at the same university.</li>
+				<li>Since july 2020 I've been working as an embedded systems engineer and full stack web developer at <a href="https://www.aquablu.com/en/">Aquablu</a>, Amsterdam. At first as a part-timer but I have been employed full-time since march 2022.</li>
+				<li>From 2017 until 2020 I've had a part-time job as a web developer at <a href="https://happyflow.io/">HappyFlow</a>, the Hague.</li>
+				<li>I have finished a <a href="https://www.delta.tudelft.nl/article/robot-minor-super-intensief-voor-studenten">minor</a> in robotics. During this minor we built a life-size interactive robotic guide named IONA for the Science Centre, Delft.</li>
+				<li>In the past I have competed in the <a href="https://robocupjunior.nl">RoboCupJunior</a> national and world championships, of which i won the former. Nowadays I am on <a href="https://www.robocupjunior.nl/organisatie/">the board</a> that organizes this national championship.</li>
+				<li>Together with a team consisting of university personnel and students I am working on a robotics platform to help teach highschoolers the art of programming.</li>
+				<li>I am a member of the <a href="https://rsadelft.nl/">Robotics Study Association</a> (RSA) that aims to connect students in the robotics community to the industry.</li>
+				<li>For my final bachelor thesis I have worked on <a href="https://repository.tudelft.nl/islandora/object/uuid%3Acaa6b17a-b94f-471c-aa22-985587f71416">computer vision software</a> for warehouse based flying drones at <a href="https://www.eonics.nl/inbox/team-airwolf-studeert-af-op-barcode-herkenning-voor-drones/">Eonics</a>, the Hague.</li>
+				<li>Ever since the first day of my student live I have been a member of <a href="https://debolk.nl/">De Bolk</a>, a student association with no purpose other than having fun. This is a great place for me to work on some programming projects because there are a lot of people to test my software on.</li>
+				</ul>
+				<h1 id="quickwords">quick words</h1>
+				<p>I like to play around with provided assets like images and documents; however, I do not own licenses to the criminally expensive subscription based software suites that are often required for these kinds of files. I wish more assets were provided in non-proprietary file formats.</p>
+				<p>I disagree with the notion that newer is always better. There is a time and place for everything, but when your web page takes a full minute to load you must reassess your priorities. Besides, I really love the look of simple websites that don't have too much going on.</p>
+				<p>Any competent programmer should be comfortable using multiple programming languages for the same reason a carpenter should be comfortable using multiple types of tools. Hammering a nail using a wrench is equivalent to writing a web server in C or a kernel driver in PHP.</p>
+				<p>Brackets are placed in Suns variant of the K&amp;R indentation style. Vim is better than Emacs, simply because it doesn't require a bachelors degree in wasting time to figure out. I prefer Gnome over KDE because I dislike overly complex setting panels. You can be an expert on any programming language and still dislike said language.</p>
 			</article>
 
 			<span class="blink">█</span>
 
 		</main>
+		<script>
+			let minimap = new Minimap(document.getElementById('article-wrapper'), 0.15)
+			minimap.init()
+			minimap.setReflowInterval(500)
+		</script>
 	</body>
 </html>
