@@ -1,13 +1,15 @@
 
 class Minimap {
 
-    constructor(element, scale){
+    constructor(element, scale) {
         this.element = element
         this.scale = scale
+        this._dragging = false
+        this._lastClientY = 0
     }
 
-    init(){
-        document.documentElement.style.setProperty('--minimap-scale', this.scale);
+    init() {
+        document.documentElement.style.setProperty('--minimap-scale', this.scale)
 
         document.addEventListener('scroll', _ => this.scrollHandler())
         window.addEventListener('resize', _ => this.resizeHandler())
@@ -27,8 +29,9 @@ class Minimap {
         // create viewport
         this.viewport = document.createElement('div')
         this.viewport.classList.add('minimap-viewport')
-        this.viewport.addEventListener('mousedown', event => this.dragpostition = event.offsetY)
-        this.viewport.addEventListener('mousemove', event => this.dragHandler(event))
+        this.viewport.addEventListener('mousedown', event => this.startDrag(event))
+        document.addEventListener('mousemove', event => this.dragHandler(event))
+        document.addEventListener('mouseup', _ => this.stopDrag())
         document.body.appendChild(this.viewport)
 
         // set initial values
@@ -36,64 +39,66 @@ class Minimap {
         this.scrollHandler()
     }
 
-    setReflowInterval(millis){
+    setReflowInterval(millis) {
         clearInterval(this.interval)
-	this.interval = setInterval(() => {
-		this.scrollHandler()
-		this.resizeHandler()
+        this.interval = setInterval(() => {
+            this.scrollHandler()
+            this.resizeHandler()
         }, millis)
     }
 
-    resizeHandler(){
-        // update width
-        this.width = this.element.clientWidth
-        document.documentElement.style.setProperty('--minimap-width', `${this.width}px`);
+    startDrag(event) {
+        event.preventDefault()
+        this._dragging = true
+        this._lastClientY = event.clientY
+        this.viewport.classList.add('dragging')
+    }
 
-        // update overlay height
+    stopDrag() {
+        this._dragging = false
+        this.viewport.classList.remove('dragging')
+    }
+
+    resizeHandler() {
+        let contentEl = this.element.querySelector('#content')
+        this.width = contentEl ? contentEl.clientWidth : this.element.clientWidth
+        document.documentElement.style.setProperty('--minimap-width', `${this.width}px`)
+
         this.overlay.style.height = `${this.map.scrollHeight * this.scale}px`
 
-        // update viewport height
         this.viewportheight = (window.innerHeight / this.element.scrollHeight) * (this.map.scrollHeight * this.scale)
         this.viewport.style.height = `${this.viewportheight}px`
     }
 
-    scrollHandler(){
-        // calc scroll percentage
+    scrollHandler() {
         let max_scroll = this.element.scrollHeight - window.innerHeight
         let percentage = window.scrollY / max_scroll
 
-        // set initial height and get the map height
         let top = -0.5 * (this.map.clientHeight - (this.map.clientHeight * this.scale))
         let mapheight = this.map.scrollHeight * this.scale
 
-        // only change offset when map is larger than the screen
-        let offset = 0;
-        if(mapheight > window.innerHeight){
+        let offset = 0
+        if (mapheight > window.innerHeight) {
             offset = percentage * (mapheight - window.innerHeight)
         }
 
-        // update location of map and overlay
         this.map.style.top = `${top - offset}px`
         this.overlay.style.top = `${-offset}px`
 
-        // calc the max distance the viewport can move
         let scrollheight = Math.min(this.map.scrollHeight * this.scale, window.innerHeight)
-
-        // update location of viewport
         this.viewport.style.top = `${percentage * (scrollheight - this.viewportheight)}px`
     }
 
-    dragHandler(event){
-        // button not held, ignore
-        if(event.buttons != 1) return
+    dragHandler(event) {
+        if (!this._dragging) return
 
-        // simulate drag
-        window.scrollTo(0, window.scrollY + (event.offsetY - this.dragpostition) * (1/this.scale))
+        let delta = event.clientY - this._lastClientY
+        this._lastClientY = event.clientY
+        window.scrollTo(0, window.scrollY + delta * (1 / this.scale))
     }
 
-    clickHandler(event){
-        // place the center of the viewport on the clicked location
-        window.scrollTo(0, (event.offsetY - this.viewport.clientHeight/2) * (1/this.scale))
+    clickHandler(event) {
+        window.scrollTo(0, (event.offsetY - this.viewport.clientHeight / 2) * (1 / this.scale))
     }
 
 }

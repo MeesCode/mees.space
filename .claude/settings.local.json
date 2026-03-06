@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__Claude_Preview__preview_start",
+      "Bash(git checkout HEAD -- public/minimap.js)",
+      "WebFetch(domain:s3.amazonaws.com)"
+    ]
+  }
+}
