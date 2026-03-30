@@ -1,0 +1,28 @@
+{
+  "name": "mees-space-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "^15.3.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "rehype-raw": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.18",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.5",
+    "typescript": "^5.8.3",
+    "@tailwindcss/postcss": "^4.1.7",
+    "tailwindcss": "^4.1.7",
+    "postcss": "^8.5.3"
+  }
+}

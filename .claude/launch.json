@@ -2,10 +2,21 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "dev",
+      "name": "server",
+      "runtimeExecutable": "go",
+      "runtimeArgs": ["run", "./cmd/server"],
+      "port": 8080,
+      "env": {
+        "MEES_JWT_SECRET": "dev-secret-key",
+        "MEES_ADMIN_PASSWORD": "admin123"
+      }
+    },
+    {
+      "name": "frontend",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npx-cli.js", "serve", "public", "-l", "3000"],
-      "port": 3000
+      "runtimeArgs": ["C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npx-cli.js", "next", "dev", "--port", "3000"],
+      "port": 3000,
+      "cwd": "frontend"
     }
   ]
 }
