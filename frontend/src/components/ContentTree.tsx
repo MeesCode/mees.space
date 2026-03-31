@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { useNavigation } from "@/lib/navigation";
 
 interface TreeNode {
   name: string;
@@ -22,7 +21,7 @@ function sortNodes(nodes: TreeNode[]): TreeNode[] {
 
 export function ContentTree() {
   const [tree, setTree] = useState<TreeNode[]>([]);
-  const pathname = usePathname();
+  const { path, navigate } = useNavigation();
 
   useEffect(() => {
     fetch("/api/pages/tree")
@@ -36,12 +35,12 @@ export function ContentTree() {
   if (tree.length === 0) return null;
 
   const currentPath =
-    pathname === "/" ? "home" : pathname.replace(/^\//, "");
+    path === "/" ? "home" : path.replace(/^\//, "");
 
   return (
     <nav className="content-nav">
       {sortNodes(tree).map((node) => (
-        <TreeNodeItem key={node.path} node={node} currentPath={currentPath} />
+        <TreeNodeItem key={node.path} node={node} currentPath={currentPath} navigate={navigate} />
       ))}
     </nav>
   );
@@ -50,9 +49,11 @@ export function ContentTree() {
 function TreeNodeItem({
   node,
   currentPath,
+  navigate,
 }: {
   node: TreeNode;
   currentPath: string;
+  navigate: (href: string) => void;
 }) {
   const [open, setOpen] = useState(true);
 
@@ -69,6 +70,7 @@ function TreeNodeItem({
                 key={child.path}
                 node={child}
                 currentPath={currentPath}
+                navigate={navigate}
               />
             ))}
           </div>
@@ -81,8 +83,15 @@ function TreeNodeItem({
   const isActive = currentPath === node.path;
 
   return (
-    <Link href={href} className={isActive ? "active" : ""}>
+    <a
+      href={href}
+      className={isActive ? "active" : ""}
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(href);
+      }}
+    >
       {node.title || node.name}
-    </Link>
+    </a>
   );
 }

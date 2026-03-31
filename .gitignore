@@ -1,6 +1,8 @@
 dist/
 uploads/*
 !uploads/.gitkeep
+content/*
+!content/home.md
 mees.db
 mees-server
 mees-server.exe

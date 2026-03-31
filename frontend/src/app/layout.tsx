@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { Sidebar } from "@/components/Sidebar";
 import { Minimap } from "@/components/Minimap";
+import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
   title: "Mees Brinkhuis - System Architect",
@@ -31,11 +32,13 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Sidebar />
-        <main id="article-wrapper" className="app-container">
-          {children}
-        </main>
-        <Minimap />
+        <Providers>
+          <Sidebar />
+          <main id="article-wrapper" className="app-container">
+            {children}
+          </main>
+          <Minimap />
+        </Providers>
       </body>
     </html>
   );

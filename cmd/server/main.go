@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/joho/godotenv"
+
 	"mees.space/internal/auth"
 	"mees.space/internal/config"
 	"mees.space/internal/database"
@@ -17,6 +19,8 @@ import (
 )
 
 func main() {
+	_ = godotenv.Load() // load .env if present
+
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)

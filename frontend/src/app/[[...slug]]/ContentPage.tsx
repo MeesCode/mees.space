@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useNavigation } from "@/lib/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TerminalPrompt } from "@/components/TerminalPrompt";
 
@@ -15,12 +15,12 @@ interface PageData {
 }
 
 export function ContentPage() {
-  const pathname = usePathname();
+  const { path } = useNavigation();
   const [page, setPage] = useState<PageData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const pagePath = pathname === "/" ? "home" : pathname.replace(/^\//, "");
+  const pagePath = path === "/" ? "home" : path.replace(/^\//, "");
 
   useEffect(() => {
     // Don't fetch for admin routes
