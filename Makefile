@@ -1,10 +1,4 @@
-.PHONY: dev-backend dev-frontend build build-frontend build-backend run test clean
-
-dev-backend:
-	go run ./cmd/server
-
-dev-frontend:
-	cd frontend && npm run dev
+.PHONY: build build-frontend build-backend run test clean
 
 build: build-frontend build-backend
 

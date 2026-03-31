@@ -10,13 +10,6 @@
         "MEES_JWT_SECRET": "dev-secret-key",
         "MEES_ADMIN_PASSWORD": "admin123"
       }
-    },
-    {
-      "name": "frontend",
-      "runtimeExecutable": "node",
-      "runtimeArgs": ["C:\\Program Files\\nodejs\\node_modules\\npm\\bin\\npx-cli.js", "next", "dev", "--port", "3000"],
-      "port": 3000,
-      "cwd": "frontend"
     }
   ]
 }
