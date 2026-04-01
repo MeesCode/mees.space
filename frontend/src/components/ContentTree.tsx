@@ -106,9 +106,19 @@ function TreeNodeItem({
         navigate(href);
       }}
     >
-      {node.title || node.name}
+      <span
+        title={node.title || node.name}
+        style={{
+          display: "block",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {node.title || node.name}
+      </span>
       {dateStr && (
-        <span style={{ marginLeft: "8px", fontSize: "0.75em", opacity: 0.5 }}>
+        <span style={{ display: "block", fontSize: "0.75em", opacity: 0.5, lineHeight: "1.4" }}>
           {dateStr}
         </span>
       )}

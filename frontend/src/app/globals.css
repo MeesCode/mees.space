@@ -226,8 +226,14 @@ h1 {
 }
 
 #content ol {
-  padding-left: 22px;
+  list-style-type: decimal;
+  list-style-position: inside;
+  padding-left: 0;
   margin: 16px 0;
+}
+
+#content ol li {
+  list-style-image: none;
 }
 
 /* ——— Code ——— */
