@@ -8,6 +8,7 @@ type TreeNode struct {
 	Children  []TreeNode `json:"children,omitempty"`
 	ShowDate  bool       `json:"show_date,omitempty"`
 	CreatedAt string     `json:"created_at,omitempty"`
+	Published bool       `json:"published"`
 }
 
 type PageResponse struct {
@@ -18,10 +19,12 @@ type PageResponse struct {
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 	ShowDate  bool   `json:"show_date"`
+	Published bool   `json:"published"`
 }
 
 type PageRequest struct {
-	Title    string `json:"title"`
-	Content  string `json:"content"`
-	ShowDate *bool  `json:"show_date,omitempty"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	ShowDate  *bool  `json:"show_date,omitempty"`
+	Published *bool  `json:"published,omitempty"`
 }

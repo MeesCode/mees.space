@@ -14,7 +14,8 @@ func NewHandler(svc *Service) *Handler {
 }
 
 func (h *Handler) GetTree(w http.ResponseWriter, r *http.Request) {
-	tree, err := BuildContentTree(h.svc.db, h.svc.contentDir)
+	includeDrafts := r.URL.Query().Get("drafts") == "true"
+	tree, err := BuildContentTree(h.svc.db, h.svc.contentDir, includeDrafts)
 	if err != nil {
 		http.Error(w, `{"error":"failed to build tree"}`, http.StatusInternalServerError)
 		return
@@ -92,7 +93,7 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.UpdatePage(pagePath, req.Title, req.Content, req.ShowDate)
+	err := h.svc.UpdatePage(pagePath, req.Title, req.Content, req.ShowDate, req.Published)
 	if err == ErrNotFound {
 		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
 		return
@@ -145,6 +146,19 @@ func (h *Handler) IncrementView(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]int{"view_count": count})
+}
+
+func (h *Handler) GetRSS(w http.ResponseWriter, r *http.Request) {
+	baseURL := "https://mees.space"
+
+	feed, err := BuildRSSFeed(h.svc.db, baseURL)
+	if err != nil {
+		http.Error(w, "failed to build feed", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/rss+xml; charset=utf-8")
+	w.Write(feed)
 }
 
 func extractPath(r *http.Request) string {

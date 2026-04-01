@@ -46,15 +46,15 @@ func (s *Service) GetPage(pagePath string) (*PageResponse, error) {
 
 	var resp PageResponse
 	err = s.db.QueryRow(
-		"SELECT path, title, view_count, created_at, updated_at, show_date FROM pages WHERE path = ?",
+		"SELECT path, title, view_count, created_at, updated_at, show_date, published FROM pages WHERE path = ?",
 		clean,
-	).Scan(&resp.Path, &resp.Title, &resp.ViewCount, &resp.CreatedAt, &resp.UpdatedAt, &resp.ShowDate)
+	).Scan(&resp.Path, &resp.Title, &resp.ViewCount, &resp.CreatedAt, &resp.UpdatedAt, &resp.ShowDate, &resp.Published)
 	if err == sql.ErrNoRows {
 		// Self-heal: file exists but DB row missing
 		title := filepath.Base(clean)
 		now := time.Now().UTC().Format(time.RFC3339)
 		_, err = s.db.Exec(
-			"INSERT INTO pages (path, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+			"INSERT INTO pages (path, title, created_at, updated_at, published) VALUES (?, ?, ?, ?, 1)",
 			clean, title, now, now,
 		)
 		if err != nil {
@@ -66,6 +66,7 @@ func (s *Service) GetPage(pagePath string) (*PageResponse, error) {
 			ViewCount: 0,
 			CreatedAt: now,
 			UpdatedAt: now,
+			Published: true,
 		}
 	} else if err != nil {
 		return nil, fmt.Errorf("query page: %w", err)
@@ -112,7 +113,7 @@ func (s *Service) CreatePage(pagePath, title, content string) error {
 	return nil
 }
 
-func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool) error {
+func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, published *bool) error {
 	clean, err := sanitizePath(pagePath)
 	if err != nil {
 		return ErrInvalidPath
@@ -133,41 +134,44 @@ func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool) er
 
 	now := time.Now().UTC().Format(time.RFC3339)
 
+	// Build dynamic update
+	setClauses := []string{"title = ?", "updated_at = ?"}
+	args := []interface{}{title, now}
+
 	if showDate != nil {
-		result, err := s.db.Exec(
-			"UPDATE pages SET title = ?, updated_at = ?, show_date = ? WHERE path = ?",
-			title, now, *showDate, clean,
+		setClauses = append(setClauses, "show_date = ?")
+		args = append(args, *showDate)
+	}
+	if published != nil {
+		setClauses = append(setClauses, "published = ?")
+		args = append(args, *published)
+	}
+
+	args = append(args, clean)
+	query := "UPDATE pages SET " + strings.Join(setClauses, ", ") + " WHERE path = ?"
+
+	result, err := s.db.Exec(query, args...)
+	if err != nil {
+		return fmt.Errorf("update page: %w", err)
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		// DB row missing, insert it
+		sd := false
+		if showDate != nil {
+			sd = *showDate
+		}
+		pub := true
+		if published != nil {
+			pub = *published
+		}
+		_, err = s.db.Exec(
+			"INSERT INTO pages (path, title, created_at, updated_at, show_date, published) VALUES (?, ?, ?, ?, ?, ?)",
+			clean, title, now, now, sd, pub,
 		)
 		if err != nil {
-			return fmt.Errorf("update page: %w", err)
-		}
-		rows, _ := result.RowsAffected()
-		if rows == 0 {
-			_, err = s.db.Exec(
-				"INSERT INTO pages (path, title, created_at, updated_at, show_date) VALUES (?, ?, ?, ?, ?)",
-				clean, title, now, now, *showDate,
-			)
-			if err != nil {
-				return fmt.Errorf("insert missing page row: %w", err)
-			}
-		}
-	} else {
-		result, err := s.db.Exec(
-			"UPDATE pages SET title = ?, updated_at = ? WHERE path = ?",
-			title, now, clean,
-		)
-		if err != nil {
-			return fmt.Errorf("update page: %w", err)
-		}
-		rows, _ := result.RowsAffected()
-		if rows == 0 {
-			_, err = s.db.Exec(
-				"INSERT INTO pages (path, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-				clean, title, now, now,
-			)
-			if err != nil {
-				return fmt.Errorf("insert missing page row: %w", err)
-			}
+			return fmt.Errorf("insert missing page row: %w", err)
 		}
 	}
 

@@ -22,6 +22,7 @@ interface PageData {
   created_at: string;
   updated_at: string;
   show_date: boolean;
+  published: boolean;
 }
 
 interface ImageInfo {
@@ -40,7 +41,11 @@ export default function EditorPage() {
     created_at: string;
   } | null>(null);
   const [showDate, setShowDate] = useState(false);
+  const [published, setPublished] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [showNewPage, setShowNewPage] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
@@ -51,7 +56,7 @@ export default function EditorPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const loadTree = useCallback(async () => {
-    const res = await apiFetch("/api/pages/tree");
+    const res = await apiFetch("/api/pages/tree?drafts=true");
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data)) setTree(data);
@@ -70,6 +75,7 @@ export default function EditorPage() {
       setTitle(data.title);
       setContent(data.content);
       setShowDate(data.show_date);
+      setPublished(data.published);
       setMeta({ view_count: data.view_count, created_at: data.created_at });
       setMessage("");
     }
@@ -81,7 +87,7 @@ export default function EditorPage() {
     const res = await apiFetch(`/api/pages/${selectedPath}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, show_date: showDate }),
+      body: JSON.stringify({ title, content, show_date: showDate, published }),
     });
     setSaving(false);
     setMessage(res.ok ? "Saved" : "Save failed");
@@ -170,6 +176,82 @@ export default function EditorPage() {
       setNewFolderParent("");
       loadTree();
     }
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 5000);
+  };
+
+  const runAiPrompt = async () => {
+    if (!aiPrompt.trim() || aiLoading) return;
+    setAiLoading(true);
+
+    const token = localStorage.getItem("access_token");
+    try {
+      const res = await fetch("/api/ai/complete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ prompt: aiPrompt, content }),
+      });
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        showToast("Streaming not supported");
+        setAiLoading(false);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let accumulated = "";
+      let buffer = "";
+      let firstChunk = true;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6);
+          if (data === "[DONE]") continue;
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) {
+              showToast(parsed.error);
+              setAiLoading(false);
+              return;
+            }
+            if (parsed.text) {
+              accumulated += parsed.text;
+              if (firstChunk) {
+                setContent(accumulated);
+                firstChunk = false;
+              } else {
+                setContent(accumulated);
+              }
+            }
+          } catch {
+            // skip unparseable lines
+          }
+        }
+      }
+
+      if (accumulated) {
+        setAiPrompt("");
+      }
+    } catch {
+      showToast("AI request failed — check your connection");
+    }
+    setAiLoading(false);
   };
 
   const uploadImage = async (file: File) => {
@@ -270,19 +352,33 @@ export default function EditorPage() {
           >
             pages
           </span>
-          <button
-            onClick={logout}
-            style={{
-              background: "none",
-              border: "none",
-              color: "rgba(255,255,255,0.4)",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: "0.75rem",
-            }}
-          >
-            logout
-          </button>
+          <span style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <a
+              href="/admin/settings"
+              style={{
+                color: "rgba(255,255,255,0.4)",
+                textDecoration: "none",
+                fontFamily: "inherit",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+              }}
+            >
+              settings
+            </a>
+            <button
+              onClick={logout}
+              style={{
+                background: "none",
+                border: "none",
+                color: "rgba(255,255,255,0.4)",
+                cursor: "pointer",
+                fontFamily: "inherit",
+                fontSize: "0.75rem",
+              }}
+            >
+              logout
+            </button>
+          </span>
         </div>
 
         <FileTree
@@ -474,6 +570,69 @@ export default function EditorPage() {
               </label>
             </div>
 
+            {/* AI Prompt */}
+            <div
+              style={{
+                padding: "6px 16px",
+                borderBottom: "1px solid rgba(255,255,255,0.1)",
+                display: "flex",
+                gap: "8px",
+                alignItems: "center",
+              }}
+            >
+              <span
+                style={{
+                  color: "var(--accent)",
+                  fontSize: "0.75rem",
+                  flexShrink: 0,
+                  opacity: 0.7,
+                }}
+              >
+                AI
+              </span>
+              <input
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    runAiPrompt();
+                  }
+                }}
+                placeholder="e.g. translate to English, make more concise, add a conclusion..."
+                disabled={aiLoading}
+                style={{
+                  flex: 1,
+                  background: "var(--background)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: "4px",
+                  padding: "5px 10px",
+                  color: "var(--color)",
+                  fontFamily: "inherit",
+                  fontSize: "0.8rem",
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={runAiPrompt}
+                disabled={aiLoading || !aiPrompt.trim()}
+                style={{
+                  background: aiLoading ? "rgba(51,172,183,0.3)" : "var(--accent)",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "5px 12px",
+                  color: "#000",
+                  fontFamily: "inherit",
+                  fontWeight: "bold",
+                  cursor: aiLoading ? "wait" : "pointer",
+                  fontSize: "0.75rem",
+                  flexShrink: 0,
+                }}
+              >
+                {aiLoading ? "Working..." : "Run"}
+              </button>
+            </div>
+
             {/* Editor + Preview */}
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
               <textarea
@@ -533,6 +692,15 @@ export default function EditorPage() {
                     />
                     Show date
                   </label>
+                  <label style={{ color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={published}
+                      onChange={(e) => setPublished(e.target.checked)}
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                    Published
+                  </label>
                 </>
               )}
               <span style={{ flex: 1 }} />
@@ -587,6 +755,33 @@ export default function EditorPage() {
           </div>
         )}
       </div>
+
+      {/* Error Toast */}
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            maxWidth: "400px",
+            background: "rgba(40, 30, 30, 0.95)",
+            border: "1px solid rgba(255, 100, 100, 0.4)",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            color: "#ff6b6b",
+            fontSize: "0.8rem",
+            fontFamily: "inherit",
+            lineHeight: "1.5",
+            zIndex: 9999,
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
+            cursor: "pointer",
+            wordBreak: "break-word",
+          }}
+          onClick={() => setToast(null)}
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

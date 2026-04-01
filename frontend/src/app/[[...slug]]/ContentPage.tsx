@@ -66,11 +66,25 @@ export function ContentPage() {
   }
 
   if (error || !page) {
+    const messages = [
+      "This page is on a coffee break. Indefinitely. ☕",
+      "404: page not found. But you found this message, so that's something.",
+      "The bits that were here have been recycled into something better.",
+      "You've reached the edge of the internet. Turn back.",
+      "This page moved out and didn't leave a forwarding address.",
+    ];
+    const message = messages[Math.floor(Math.random() * messages.length)];
+
     return (
       <>
         <article id="content">
           <h1>404</h1>
-          <p>Page not found.</p>
+          <p>{message}</p>
+          <p style={{ marginTop: "24px" }}>
+            <a href="/" onClick={(e) => { e.preventDefault(); window.location.href = "/"; }}>
+              ← take me home
+            </a>
+          </p>
         </article>
         <TerminalPrompt path={pagePath} />
       </>

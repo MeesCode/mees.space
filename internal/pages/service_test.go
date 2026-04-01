@@ -24,7 +24,9 @@ func setupTestDB(t *testing.T) (*sql.DB, string) {
 		title TEXT NOT NULL,
 		view_count INTEGER NOT NULL DEFAULT 0,
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		show_date BOOLEAN NOT NULL DEFAULT 0,
+		published BOOLEAN NOT NULL DEFAULT 1
 	)`)
 	db.Exec(`CREATE INDEX idx_pages_path ON pages(path)`)
 
@@ -102,7 +104,7 @@ func TestUpdatePage(t *testing.T) {
 
 	svc.CreatePage("home", "Home", "Original")
 
-	err := svc.UpdatePage("home", "Updated Home", "New content")
+	err := svc.UpdatePage("home", "Updated Home", "New content", nil, nil)
 	if err != nil {
 		t.Fatalf("UpdatePage: %v", err)
 	}
@@ -120,7 +122,7 @@ func TestUpdatePage_NotFound(t *testing.T) {
 	db, contentDir := setupTestDB(t)
 	svc := NewService(db, contentDir)
 
-	err := svc.UpdatePage("nonexistent", "Title", "Content")
+	err := svc.UpdatePage("nonexistent", "Title", "Content", nil, nil)
 	if err != ErrNotFound {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}
@@ -221,7 +223,7 @@ func TestBuildContentTree(t *testing.T) {
 	db.Exec("INSERT INTO pages (path, title) VALUES (?, ?)", "home", "Home Page")
 	db.Exec("INSERT INTO pages (path, title) VALUES (?, ?)", "blogs/post1", "My First Post")
 
-	tree, err := BuildContentTree(db, contentDir)
+	tree, err := BuildContentTree(db, contentDir, true)
 	if err != nil {
 		t.Fatalf("BuildContentTree: %v", err)
 	}

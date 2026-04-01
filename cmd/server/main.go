@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"mees.space/internal/ai"
 	"mees.space/internal/auth"
 	"mees.space/internal/config"
 	"mees.space/internal/database"
@@ -16,6 +17,7 @@ import (
 	"mees.space/internal/images"
 	"mees.space/internal/middleware"
 	"mees.space/internal/pages"
+	"mees.space/internal/settings"
 )
 
 func main() {
@@ -56,6 +58,9 @@ func main() {
 
 	foldersHandler := folders.NewHandler(cfg.ContentDir, db)
 
+	settingsHandler := settings.NewHandler(db)
+	aiHandler := ai.NewHandler(db)
+
 	protected := func(next http.HandlerFunc) http.Handler {
 		return auth.RequireAuth(jwtSvc, next)
 	}
@@ -69,6 +74,7 @@ func main() {
 	// Pages (public)
 	mux.HandleFunc("GET /api/pages/tree", pagesHandler.GetTree)
 	mux.HandleFunc("GET /api/pages/{path...}", pagesHandler.GetPage)
+	mux.HandleFunc("GET /feed.xml", pagesHandler.GetRSS)
 
 	// View count (separate route since wildcard must be at end)
 	mux.HandleFunc("POST /api/views/{path...}", pagesHandler.IncrementView)
@@ -87,6 +93,13 @@ func main() {
 	mux.Handle("GET /api/images", protected(imagesHandler.List))
 	mux.Handle("POST /api/images", protected(imagesHandler.Upload))
 	mux.Handle("DELETE /api/images/{filename}", protected(imagesHandler.Delete))
+
+	// Settings (protected)
+	mux.Handle("GET /api/settings", protected(settingsHandler.Get))
+	mux.Handle("PUT /api/settings", protected(settingsHandler.Update))
+
+	// AI (protected)
+	mux.Handle("POST /api/ai/complete", protected(aiHandler.Complete))
 
 	// Uploaded images (public)
 	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.UploadsDir))))

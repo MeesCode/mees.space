@@ -12,11 +12,12 @@ type pageInfo struct {
 	Title     string
 	ShowDate  bool
 	CreatedAt string
+	Published bool
 }
 
-func BuildContentTree(db *sql.DB, contentDir string) ([]TreeNode, error) {
+func BuildContentTree(db *sql.DB, contentDir string, includeDrafts bool) ([]TreeNode, error) {
 	pages := make(map[string]pageInfo)
-	rows, err := db.Query("SELECT path, title, show_date, created_at FROM pages")
+	rows, err := db.Query("SELECT path, title, show_date, created_at, published FROM pages")
 	if err != nil {
 		return nil, err
 	}
@@ -24,17 +25,17 @@ func BuildContentTree(db *sql.DB, contentDir string) ([]TreeNode, error) {
 
 	for rows.Next() {
 		var path, title, createdAt string
-		var showDate bool
-		if err := rows.Scan(&path, &title, &showDate, &createdAt); err != nil {
+		var showDate, published bool
+		if err := rows.Scan(&path, &title, &showDate, &createdAt, &published); err != nil {
 			return nil, err
 		}
-		pages[path] = pageInfo{Title: title, ShowDate: showDate, CreatedAt: createdAt}
+		pages[path] = pageInfo{Title: title, ShowDate: showDate, CreatedAt: createdAt, Published: published}
 	}
 
-	return buildTreeRecursive(contentDir, "", pages), nil
+	return buildTreeRecursive(contentDir, "", pages, includeDrafts), nil
 }
 
-func buildTreeRecursive(baseDir, relDir string, pages map[string]pageInfo) []TreeNode {
+func buildTreeRecursive(baseDir, relDir string, pages map[string]pageInfo, includeDrafts bool) []TreeNode {
 	var nodes []TreeNode
 
 	dir := baseDir
@@ -56,7 +57,7 @@ func buildTreeRecursive(baseDir, relDir string, pages map[string]pageInfo) []Tre
 		}
 
 		if e.IsDir() {
-			children := buildTreeRecursive(baseDir, childRel, pages)
+			children := buildTreeRecursive(baseDir, childRel, pages, includeDrafts)
 			nodes = append(nodes, TreeNode{
 				Name:     e.Name(),
 				Path:     childRel,
@@ -67,6 +68,11 @@ func buildTreeRecursive(baseDir, relDir string, pages map[string]pageInfo) []Tre
 			pagePath := strings.TrimSuffix(childRel, ".md")
 			name := strings.TrimSuffix(e.Name(), ".md")
 			info := pages[pagePath]
+
+			if !includeDrafts && !info.Published {
+				continue
+			}
+
 			title := info.Title
 			if title == "" {
 				title = name
@@ -79,6 +85,7 @@ func buildTreeRecursive(baseDir, relDir string, pages map[string]pageInfo) []Tre
 				IsDir:     false,
 				ShowDate:  info.ShowDate,
 				CreatedAt: info.CreatedAt,
+				Published: info.Published,
 			})
 		}
 	}
