@@ -4,8 +4,11 @@ uploads/*
 content/*
 !content/home.md
 mees.db
+mees.db-shm
+mees.db-wal
 mees-server
 mees-server.exe
+server.exe
 tmp/
 frontend/node_modules/
 frontend/.next/

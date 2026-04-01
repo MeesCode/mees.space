@@ -105,6 +105,14 @@ export function Minimap() {
       scrollHandler();
     }, 500);
 
+    // Recalculate immediately when content changes (navigation)
+    const observer = new MutationObserver(() => {
+      updateContent();
+      resizeHandler();
+      scrollHandler();
+    });
+    observer.observe(wrapper, { childList: true, subtree: true });
+
     // Event listeners
     const onScroll = () => scrollHandler();
     const onResize = () => resizeHandler();
@@ -132,6 +140,7 @@ export function Minimap() {
 
     return () => {
       clearInterval(interval);
+      observer.disconnect();
       document.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       viewport.removeEventListener("mousedown", onMouseDown);
