@@ -57,7 +57,7 @@ function TreeNodeItem({
   currentPath: string;
   navigate: (href: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   if (node.is_dir) {
     return (

@@ -664,7 +664,7 @@ function FolderNode({
   onRename: (path: string, newName: string) => void;
   onDelete: (path: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [renaming, setRenaming] = useState(false);
   const [renameName, setRenameName] = useState(node.name);
