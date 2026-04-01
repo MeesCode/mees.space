@@ -1,4 +1,4 @@
-.PHONY: build build-frontend build-backend run test clean
+.PHONY: build build-frontend build-backend build-run run test clean
 
 build: build-frontend build-backend
 
@@ -7,6 +7,8 @@ build-frontend:
 
 build-backend:
 	go build -o mees-server ./cmd/server
+
+build-run: build run
 
 run:
 	./mees-server

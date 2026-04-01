@@ -54,7 +54,7 @@ func main() {
 	imagesSvc := images.NewService(cfg.UploadsDir)
 	imagesHandler := images.NewHandler(imagesSvc)
 
-	foldersHandler := folders.NewHandler(cfg.ContentDir)
+	foldersHandler := folders.NewHandler(cfg.ContentDir, db)
 
 	protected := func(next http.HandlerFunc) http.Handler {
 		return auth.RequireAuth(jwtSvc, next)
@@ -80,6 +80,7 @@ func main() {
 
 	// Folders (protected)
 	mux.Handle("POST /api/folders/{path...}", protected(foldersHandler.Create))
+	mux.Handle("PUT /api/folders/{path...}", protected(foldersHandler.Rename))
 	mux.Handle("DELETE /api/folders/{path...}", protected(foldersHandler.Delete))
 
 	// Images
@@ -89,6 +90,11 @@ func main() {
 
 	// Uploaded images (public)
 	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.UploadsDir))))
+
+	// Admin redirect
+	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "/admin/editor", http.StatusFound)
+	})
 
 	// Catch-all: serve Next.js static export
 	mux.HandleFunc("GET /{path...}", staticHandler(cfg.DistDir))

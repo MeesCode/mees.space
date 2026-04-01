@@ -9,6 +9,8 @@ interface TreeNode {
   title?: string;
   is_dir: boolean;
   children?: TreeNode[];
+  show_date?: boolean;
+  created_at?: string;
 }
 
 function sortNodes(nodes: TreeNode[]): TreeNode[] {
@@ -82,6 +84,10 @@ function TreeNodeItem({
   const href = node.path === "home" ? "/" : `/${node.path}`;
   const isActive = currentPath === node.path;
 
+  const dateStr = node.show_date && node.created_at
+    ? new Date(node.created_at).toLocaleDateString("en-CA")
+    : null;
+
   return (
     <a
       href={href}
@@ -92,6 +98,11 @@ function TreeNodeItem({
       }}
     >
       {node.title || node.name}
+      {dateStr && (
+        <span style={{ marginLeft: "8px", fontSize: "0.75em", opacity: 0.5 }}>
+          {dateStr}
+        </span>
+      )}
     </a>
   );
 }

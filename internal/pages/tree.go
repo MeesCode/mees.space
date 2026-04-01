@@ -8,26 +8,33 @@ import (
 	"strings"
 )
 
+type pageInfo struct {
+	Title     string
+	ShowDate  bool
+	CreatedAt string
+}
+
 func BuildContentTree(db *sql.DB, contentDir string) ([]TreeNode, error) {
-	titles := make(map[string]string)
-	rows, err := db.Query("SELECT path, title FROM pages")
+	pages := make(map[string]pageInfo)
+	rows, err := db.Query("SELECT path, title, show_date, created_at FROM pages")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		var path, title string
-		if err := rows.Scan(&path, &title); err != nil {
+		var path, title, createdAt string
+		var showDate bool
+		if err := rows.Scan(&path, &title, &showDate, &createdAt); err != nil {
 			return nil, err
 		}
-		titles[path] = title
+		pages[path] = pageInfo{Title: title, ShowDate: showDate, CreatedAt: createdAt}
 	}
 
-	return buildTreeRecursive(contentDir, "", titles), nil
+	return buildTreeRecursive(contentDir, "", pages), nil
 }
 
-func buildTreeRecursive(baseDir, relDir string, titles map[string]string) []TreeNode {
+func buildTreeRecursive(baseDir, relDir string, pages map[string]pageInfo) []TreeNode {
 	var nodes []TreeNode
 
 	dir := baseDir
@@ -49,7 +56,7 @@ func buildTreeRecursive(baseDir, relDir string, titles map[string]string) []Tree
 		}
 
 		if e.IsDir() {
-			children := buildTreeRecursive(baseDir, childRel, titles)
+			children := buildTreeRecursive(baseDir, childRel, pages)
 			nodes = append(nodes, TreeNode{
 				Name:     e.Name(),
 				Path:     childRel,
@@ -59,16 +66,19 @@ func buildTreeRecursive(baseDir, relDir string, titles map[string]string) []Tree
 		} else if strings.HasSuffix(e.Name(), ".md") {
 			pagePath := strings.TrimSuffix(childRel, ".md")
 			name := strings.TrimSuffix(e.Name(), ".md")
-			title := titles[pagePath]
+			info := pages[pagePath]
+			title := info.Title
 			if title == "" {
 				title = name
 			}
 
 			nodes = append(nodes, TreeNode{
-				Name:  name,
-				Path:  pagePath,
-				Title: title,
-				IsDir: false,
+				Name:      name,
+				Path:      pagePath,
+				Title:     title,
+				IsDir:     false,
+				ShowDate:  info.ShowDate,
+				CreatedAt: info.CreatedAt,
 			})
 		}
 	}

@@ -12,7 +12,8 @@
       "Bash(go build:*)",
       "Bash(taskkill //F //IM \"main.exe\")",
       "Bash(taskkill //F //IM \"mees-server.exe\")",
-      "Bash(taskkill //F //IM \"server.exe\")"
+      "Bash(taskkill //F //IM \"server.exe\")",
+      "Bash(npm install:*)"
     ]
   }
 }

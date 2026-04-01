@@ -92,7 +92,7 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.UpdatePage(pagePath, req.Title, req.Content)
+	err := h.svc.UpdatePage(pagePath, req.Title, req.Content, req.ShowDate)
 	if err == ErrNotFound {
 		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
 		return

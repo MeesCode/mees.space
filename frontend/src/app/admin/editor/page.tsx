@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { logout } from "@/lib/auth";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface TreeNode {
   name: string;
@@ -20,6 +21,7 @@ interface PageData {
   view_count: number;
   created_at: string;
   updated_at: string;
+  show_date: boolean;
 }
 
 interface ImageInfo {
@@ -37,12 +39,15 @@ export default function EditorPage() {
     view_count: number;
     created_at: string;
   } | null>(null);
+  const [showDate, setShowDate] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [showNewPage, setShowNewPage] = useState(false);
   const [showNewFolder, setShowNewFolder] = useState(false);
   const [newName, setNewName] = useState("");
   const [newTitle, setNewTitle] = useState("");
+  const [newFolder, setNewFolder] = useState("");
+  const [newFolderParent, setNewFolderParent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const loadTree = useCallback(async () => {
@@ -64,6 +69,7 @@ export default function EditorPage() {
       setSelectedPath(path);
       setTitle(data.title);
       setContent(data.content);
+      setShowDate(data.show_date);
       setMeta({ view_count: data.view_count, created_at: data.created_at });
       setMessage("");
     }
@@ -75,7 +81,7 @@ export default function EditorPage() {
     const res = await apiFetch(`/api/pages/${selectedPath}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content }),
+      body: JSON.stringify({ title, content, show_date: showDate }),
     });
     setSaving(false);
     setMessage(res.ok ? "Saved" : "Save failed");
@@ -96,17 +102,22 @@ export default function EditorPage() {
     }
   };
 
+  const flattenFolders = (nodes: TreeNode[], prefix = ""): string[] => {
+    const folders: string[] = [];
+    for (const node of nodes) {
+      if (node.is_dir) {
+        folders.push(node.path);
+        if (node.children) {
+          folders.push(...flattenFolders(node.children, node.path + "/"));
+        }
+      }
+    }
+    return folders;
+  };
+
   const createPage = async () => {
     if (!newName || !newTitle) return;
-    const path = selectedPath
-      ? tree.find(
-          (n) => n.is_dir && (n.path === selectedPath || selectedPath?.startsWith(n.path + "/"))
-        )
-        ? selectedPath.includes("/")
-          ? selectedPath.substring(0, selectedPath.lastIndexOf("/")) + "/" + newName
-          : newName
-        : newName
-      : newName;
+    const path = newFolder ? newFolder + "/" + newName : newName;
 
     const res = await apiFetch(`/api/pages/${path}`, {
       method: "POST",
@@ -122,12 +133,41 @@ export default function EditorPage() {
     }
   };
 
+  const renameFolder = async (path: string, newName: string) => {
+    const res = await apiFetch(`/api/folders/${path}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: newName }),
+    });
+    if (res.ok) {
+      loadTree();
+    } else {
+      const data = await res.json().catch(() => ({ error: "Rename failed" }));
+      alert(data.error || "Rename failed");
+    }
+  };
+
+  const deleteFolder = async (path: string) => {
+    if (!confirm(`Delete folder "${path}" and all its contents?`)) return;
+    const res = await apiFetch(`/api/folders/${path}?recursive=true`, {
+      method: "DELETE",
+    });
+    if (res.ok) {
+      loadTree();
+    } else {
+      const data = await res.json().catch(() => ({ error: "Delete failed" }));
+      alert(data.error || "Delete failed");
+    }
+  };
+
   const createFolder = async () => {
     if (!newName) return;
-    const res = await apiFetch(`/api/folders/${newName}`, { method: "POST" });
+    const path = newFolderParent ? newFolderParent + "/" + newName : newName;
+    const res = await apiFetch(`/api/folders/${path}`, { method: "POST" });
     if (res.ok) {
       setShowNewFolder(false);
       setNewName("");
+      setNewFolderParent("");
       loadTree();
     }
   };
@@ -249,6 +289,8 @@ export default function EditorPage() {
           nodes={tree}
           selectedPath={selectedPath}
           onSelect={loadPage}
+          onRenameFolder={renameFolder}
+          onDeleteFolder={deleteFolder}
         />
 
         <div
@@ -259,18 +301,28 @@ export default function EditorPage() {
             flexWrap: "wrap",
           }}
         >
-          <SmallButton onClick={() => setShowNewPage(true)}>
+          <SmallButton onClick={() => { setShowNewPage(!showNewPage); setShowNewFolder(false); setNewName(""); setNewTitle(""); setNewFolder(""); }}>
             + page
           </SmallButton>
-          <SmallButton onClick={() => setShowNewFolder(true)}>
+          <SmallButton onClick={() => { setShowNewFolder(!showNewFolder); setShowNewPage(false); setNewName(""); setNewFolderParent(""); }}>
             + folder
           </SmallButton>
         </div>
 
         {showNewPage && (
           <div style={{ marginTop: "12px" }}>
+            <select
+              value={newFolder}
+              onChange={(e) => setNewFolder(e.target.value)}
+              style={{ ...inputStyle, ...selectStyle, marginBottom: "6px" }}
+            >
+              <option value="">(root)</option>
+              {flattenFolders(tree).map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
             <input
-              placeholder="path (e.g. blogs/my-post)"
+              placeholder="slug (e.g. my-post)"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               style={inputStyle}
@@ -288,6 +340,7 @@ export default function EditorPage() {
                   setShowNewPage(false);
                   setNewName("");
                   setNewTitle("");
+                  setNewFolder("");
                 }}
               >
                 cancel
@@ -298,8 +351,18 @@ export default function EditorPage() {
 
         {showNewFolder && (
           <div style={{ marginTop: "12px" }}>
+            <select
+              value={newFolderParent}
+              onChange={(e) => setNewFolderParent(e.target.value)}
+              style={{ ...inputStyle, ...selectStyle, marginBottom: "6px" }}
+            >
+              <option value="">(root)</option>
+              {flattenFolders(tree).map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
             <input
-              placeholder="folder path"
+              placeholder="folder name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               style={inputStyle}
@@ -310,6 +373,7 @@ export default function EditorPage() {
                 onClick={() => {
                   setShowNewFolder(false);
                   setNewName("");
+                  setNewFolderParent("");
                 }}
               >
                 cancel
@@ -460,6 +524,15 @@ export default function EditorPage() {
                   <span style={{ color: "rgba(255,255,255,0.4)" }}>
                     Views: {meta.view_count}
                   </span>
+                  <label style={{ color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+                    <input
+                      type="checkbox"
+                      checked={showDate}
+                      onChange={(e) => setShowDate(e.target.checked)}
+                      style={{ accentColor: "var(--accent)" }}
+                    />
+                    Show date
+                  </label>
                 </>
               )}
               <span style={{ flex: 1 }} />
@@ -523,11 +596,15 @@ function FileTree({
   selectedPath,
   onSelect,
   depth = 0,
+  onRenameFolder,
+  onDeleteFolder,
 }: {
   nodes: TreeNode[];
   selectedPath: string | null;
   onSelect: (path: string) => void;
   depth?: number;
+  onRenameFolder: (path: string, newName: string) => void;
+  onDeleteFolder: (path: string) => void;
 }) {
   return (
     <div style={{ paddingLeft: depth > 0 ? 12 : 0 }}>
@@ -540,6 +617,8 @@ function FileTree({
               selectedPath={selectedPath}
               onSelect={onSelect}
               depth={depth}
+              onRename={onRenameFolder}
+              onDelete={onDeleteFolder}
             />
           );
         }
@@ -575,18 +654,33 @@ function FolderNode({
   selectedPath,
   onSelect,
   depth,
+  onRename,
+  onDelete,
 }: {
   node: TreeNode;
   selectedPath: string | null;
   onSelect: (path: string) => void;
   depth: number;
+  onRename: (path: string, newName: string) => void;
+  onDelete: (path: string) => void;
 }) {
   const [open, setOpen] = useState(true);
+  const [hovered, setHovered] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameName, setRenameName] = useState(node.name);
+
+  const handleRenameSubmit = () => {
+    if (renameName && renameName !== node.name) {
+      onRename(node.path, renameName);
+    }
+    setRenaming(false);
+  };
 
   return (
     <div>
       <div
-        onClick={() => setOpen(!open)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         style={{
           padding: "3px 8px",
           cursor: "pointer",
@@ -595,9 +689,54 @@ function FolderNode({
           textTransform: "uppercase",
           letterSpacing: "0.05em",
           userSelect: "none",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
         }}
       >
-        {open ? "▾" : "▸"} {node.name}
+        <span onClick={() => setOpen(!open)} style={{ flex: 1 }}>
+          {open ? "▾" : "▸"}{" "}
+          {renaming ? (
+            <input
+              value={renameName}
+              onChange={(e) => setRenameName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleRenameSubmit();
+                if (e.key === "Escape") { setRenaming(false); setRenameName(node.name); }
+              }}
+              onBlur={handleRenameSubmit}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "var(--background)",
+                border: "1px solid rgba(255,255,255,0.3)",
+                borderRadius: "2px",
+                color: "var(--color)",
+                fontFamily: "inherit",
+                fontSize: "inherit",
+                textTransform: "none" as const,
+                padding: "1px 4px",
+                width: "80%",
+              }}
+            />
+          ) : (
+            node.name
+          )}
+        </span>
+        {hovered && !renaming && (
+          <span style={{ display: "flex", gap: "2px" }}>
+            <Pencil
+              size={12}
+              onClick={(e) => { e.stopPropagation(); setRenaming(true); setRenameName(node.name); }}
+              style={{ cursor: "pointer" }}
+            />
+            <Trash2
+              size={12}
+              onClick={(e) => { e.stopPropagation(); onDelete(node.path); }}
+              style={{ cursor: "pointer", color: "#ff6b6b" }}
+            />
+          </span>
+        )}
       </div>
       {open && node.children && (
         <FileTree
@@ -605,6 +744,8 @@ function FolderNode({
           selectedPath={selectedPath}
           onSelect={onSelect}
           depth={depth + 1}
+          onRenameFolder={onRename}
+          onDeleteFolder={onDelete}
         />
       )}
     </div>
@@ -647,4 +788,9 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "inherit",
   fontSize: "0.85rem",
   outline: "none",
+};
+
+const selectStyle: React.CSSProperties = {
+  paddingRight: "28px",
+  appearance: "auto",
 };

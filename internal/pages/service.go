@@ -46,9 +46,9 @@ func (s *Service) GetPage(pagePath string) (*PageResponse, error) {
 
 	var resp PageResponse
 	err = s.db.QueryRow(
-		"SELECT path, title, view_count, created_at, updated_at FROM pages WHERE path = ?",
+		"SELECT path, title, view_count, created_at, updated_at, show_date FROM pages WHERE path = ?",
 		clean,
-	).Scan(&resp.Path, &resp.Title, &resp.ViewCount, &resp.CreatedAt, &resp.UpdatedAt)
+	).Scan(&resp.Path, &resp.Title, &resp.ViewCount, &resp.CreatedAt, &resp.UpdatedAt, &resp.ShowDate)
 	if err == sql.ErrNoRows {
 		// Self-heal: file exists but DB row missing
 		title := filepath.Base(clean)
@@ -112,7 +112,7 @@ func (s *Service) CreatePage(pagePath, title, content string) error {
 	return nil
 }
 
-func (s *Service) UpdatePage(pagePath, title, content string) error {
+func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool) error {
 	clean, err := sanitizePath(pagePath)
 	if err != nil {
 		return ErrInvalidPath
@@ -132,23 +132,42 @@ func (s *Service) UpdatePage(pagePath, title, content string) error {
 	}
 
 	now := time.Now().UTC().Format(time.RFC3339)
-	result, err := s.db.Exec(
-		"UPDATE pages SET title = ?, updated_at = ? WHERE path = ?",
-		title, now, clean,
-	)
-	if err != nil {
-		return fmt.Errorf("update page: %w", err)
-	}
 
-	rows, _ := result.RowsAffected()
-	if rows == 0 {
-		// DB row missing, insert it
-		_, err = s.db.Exec(
-			"INSERT INTO pages (path, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
-			clean, title, now, now,
+	if showDate != nil {
+		result, err := s.db.Exec(
+			"UPDATE pages SET title = ?, updated_at = ?, show_date = ? WHERE path = ?",
+			title, now, *showDate, clean,
 		)
 		if err != nil {
-			return fmt.Errorf("insert missing page row: %w", err)
+			return fmt.Errorf("update page: %w", err)
+		}
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			_, err = s.db.Exec(
+				"INSERT INTO pages (path, title, created_at, updated_at, show_date) VALUES (?, ?, ?, ?, ?)",
+				clean, title, now, now, *showDate,
+			)
+			if err != nil {
+				return fmt.Errorf("insert missing page row: %w", err)
+			}
+		}
+	} else {
+		result, err := s.db.Exec(
+			"UPDATE pages SET title = ?, updated_at = ? WHERE path = ?",
+			title, now, clean,
+		)
+		if err != nil {
+			return fmt.Errorf("update page: %w", err)
+		}
+		rows, _ := result.RowsAffected()
+		if rows == 0 {
+			_, err = s.db.Exec(
+				"INSERT INTO pages (path, title, created_at, updated_at) VALUES (?, ?, ?, ?)",
+				clean, title, now, now,
+			)
+			if err != nil {
+				return fmt.Errorf("insert missing page row: %w", err)
+			}
 		}
 	}
 
