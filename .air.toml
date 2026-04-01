@@ -1,0 +1,6 @@
+[build]
+cmd = "go build -o ./tmp/main.exe ./cmd/server"
+bin = "./tmp/main.exe"
+include_ext = ["go", "sql"]
+exclude_dir = ["frontend", "dist", "node_modules", "tmp", "uploads"]
+delay = 1000

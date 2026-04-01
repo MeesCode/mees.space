@@ -1,1 +1,12 @@
-public/content/
+dist/
+uploads/*
+!uploads/.gitkeep
+content/*
+!content/home.md
+mees.db
+mees-server
+mees-server.exe
+tmp/
+frontend/node_modules/
+frontend/.next/
+.env
