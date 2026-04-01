@@ -113,7 +113,7 @@ func (s *Service) CreatePage(pagePath, title, content string) error {
 	return nil
 }
 
-func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, published *bool) error {
+func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, published *bool, createdAt *string) error {
 	clean, err := sanitizePath(pagePath)
 	if err != nil {
 		return ErrInvalidPath
@@ -145,6 +145,10 @@ func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, pu
 	if published != nil {
 		setClauses = append(setClauses, "published = ?")
 		args = append(args, *published)
+	}
+	if createdAt != nil {
+		setClauses = append(setClauses, "created_at = ?")
+		args = append(args, *createdAt)
 	}
 
 	args = append(args, clean)

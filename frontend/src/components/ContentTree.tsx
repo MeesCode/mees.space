@@ -26,13 +26,22 @@ export function ContentTree() {
   const { path, navigate } = useNavigation();
 
   useEffect(() => {
-    fetch("/api/pages/tree")
-      .then((r) => r.json())
-      .then((data) => {
-        if (Array.isArray(data)) setTree(data);
-      })
-      .catch(() => {});
-  }, []);
+    const loadTree = () => {
+      fetch("/api/pages/tree")
+        .then((r) => r.json())
+        .then((data) => {
+          if (Array.isArray(data)) setTree(data);
+        })
+        .catch(() => {});
+    };
+
+    loadTree();
+
+    // Re-fetch when the tab regains focus (e.g. coming back from admin)
+    const onFocus = () => loadTree();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [path]);
 
   if (tree.length === 0) return null;
 

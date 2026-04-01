@@ -23,8 +23,9 @@ type PageResponse struct {
 }
 
 type PageRequest struct {
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	ShowDate  *bool  `json:"show_date,omitempty"`
-	Published *bool  `json:"published,omitempty"`
+	Title     string  `json:"title"`
+	Content   string  `json:"content"`
+	ShowDate  *bool   `json:"show_date,omitempty"`
+	Published *bool   `json:"published,omitempty"`
+	CreatedAt *string `json:"created_at,omitempty"`
 }

@@ -1,8 +1,16 @@
 "use client";
 
 import { ContentTree } from "./ContentTree";
+import { isLoggedIn } from "@/lib/auth";
+import { useEffect, useState } from "react";
 
 export function Sidebar() {
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setLoggedIn(isLoggedIn());
+  }, []);
+
   return (
     <aside className="app-header">
       <div style={{ position: "relative", display: "inline-block" }}>
@@ -33,6 +41,20 @@ export function Sidebar() {
         </a>
       </div>
       <ContentTree />
+      {loggedIn && (
+        <a
+          href="/admin/editor"
+          style={{
+            display: "block",
+            marginTop: "24px",
+            color: "rgba(255,255,255,0.3)",
+            textDecoration: "none",
+            fontSize: "0.75rem",
+          }}
+        >
+          admin →
+        </a>
+      )}
     </aside>
   );
 }

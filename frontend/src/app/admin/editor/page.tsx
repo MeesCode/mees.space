@@ -41,6 +41,7 @@ export default function EditorPage() {
     created_at: string;
   } | null>(null);
   const [showDate, setShowDate] = useState(false);
+  const [createdAt, setCreatedAt] = useState("");
   const [published, setPublished] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
@@ -76,6 +77,7 @@ export default function EditorPage() {
       setContent(data.content);
       setShowDate(data.show_date);
       setPublished(data.published);
+      setCreatedAt(data.created_at);
       setMeta({ view_count: data.view_count, created_at: data.created_at });
       setMessage("");
     }
@@ -87,10 +89,11 @@ export default function EditorPage() {
     const res = await apiFetch(`/api/pages/${selectedPath}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, show_date: showDate, published }),
+      body: JSON.stringify({ title, content, show_date: showDate, published, created_at: createdAt }),
     });
     setSaving(false);
     setMessage(res.ok ? "Saved" : "Save failed");
+    if (res.ok) loadTree();
     setTimeout(() => setMessage(""), 2000);
   };
 
@@ -353,6 +356,18 @@ export default function EditorPage() {
             pages
           </span>
           <span style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+            <a
+              href="/"
+              style={{
+                color: "rgba(255,255,255,0.4)",
+                textDecoration: "none",
+                fontFamily: "inherit",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+              }}
+            >
+              site
+            </a>
             <a
               href="/admin/settings"
               style={{
@@ -677,9 +692,28 @@ export default function EditorPage() {
             >
               {meta && (
                 <>
-                  <span style={{ color: "rgba(255,255,255,0.4)" }}>
-                    Created: {new Date(meta.created_at).toLocaleDateString()}
-                  </span>
+                  <label style={{ color: "rgba(255,255,255,0.4)", display: "flex", alignItems: "center", gap: "4px" }}>
+                    Created:
+                    <input
+                      type="date"
+                      value={createdAt ? createdAt.slice(0, 10) : ""}
+                      onChange={(e) => {
+                        const date = e.target.value;
+                        if (date) {
+                          setCreatedAt(date + "T00:00:00Z");
+                        }
+                      }}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        color: "rgba(255,255,255,0.4)",
+                        fontFamily: "inherit",
+                        fontSize: "inherit",
+                        outline: "none",
+                        cursor: "pointer",
+                      }}
+                    />
+                  </label>
                   <span style={{ color: "rgba(255,255,255,0.4)" }}>
                     Views: {meta.view_count}
                   </span>

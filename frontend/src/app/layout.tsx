@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
-import { Minimap } from "@/components/Minimap";
 import { Providers } from "@/components/Providers";
+import { ClientLayout } from "@/components/ClientLayout";
 
 export const metadata: Metadata = {
   title: "Mees Brinkhuis - System Architect",
@@ -36,11 +35,7 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-          <Sidebar />
-          <main id="article-wrapper" className="app-container">
-            {children}
-          </main>
-          <Minimap />
+          <ClientLayout>{children}</ClientLayout>
         </Providers>
       </body>
     </html>
