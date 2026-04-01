@@ -100,6 +100,14 @@ func sortNodes(nodes []TreeNode) {
 		if nodes[i].IsDir != nodes[j].IsDir {
 			return !nodes[i].IsDir
 		}
+		// Directories: alphabetical ascending
+		if nodes[i].IsDir {
+			return strings.ToLower(nodes[i].Name) < strings.ToLower(nodes[j].Name)
+		}
+		// Files: newest first (by created_at descending)
+		if nodes[i].CreatedAt != nodes[j].CreatedAt {
+			return nodes[i].CreatedAt > nodes[j].CreatedAt
+		}
 		return strings.ToLower(nodes[i].Name) < strings.ToLower(nodes[j].Name)
 	})
 }

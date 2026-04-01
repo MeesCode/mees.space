@@ -16,7 +16,7 @@ interface TreeNode {
 function sortNodes(nodes: TreeNode[]): TreeNode[] {
   const files = nodes.filter((n) => !n.is_dir);
   const dirs = nodes.filter((n) => n.is_dir);
-  files.sort((a, b) => a.name.localeCompare(b.name));
+  files.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "") || a.name.localeCompare(b.name));
   dirs.sort((a, b) => a.name.localeCompare(b.name));
   return [...files, ...dirs];
 }
