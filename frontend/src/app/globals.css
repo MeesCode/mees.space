@@ -161,6 +161,58 @@ h1 {
   width: 100%;
 }
 
+/* ——— Headings ——— */
+#content h2 {
+  font-size: 1.15rem;
+  color: var(--accent);
+  margin-top: 32px;
+  margin-bottom: 12px;
+  text-shadow: 0 0 20px rgba(51, 172, 183, 0.15);
+}
+
+#content h3 {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 24px;
+  margin-bottom: 8px;
+}
+
+#content h4,
+#content h5,
+#content h6 {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+/* ——— Paragraphs ——— */
+#content p {
+  margin: 16px 0;
+  line-height: 1.7;
+}
+
+/* ——— Horizontal Rules ——— */
+#content hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 32px 0;
+}
+
+/* ——— Blockquotes ——— */
+#content blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 20px 0;
+  padding: 8px 16px;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0 4px 4px 0;
+}
+
+#content blockquote p {
+  margin: 8px 0;
+}
+
 /* ——— Lists ——— */
 #content li {
   margin-top: 12px;
@@ -170,12 +222,68 @@ h1 {
   list-style-image: url("/chevron.svg");
   list-style-position: outside;
   padding-left: 22px;
+  margin: 16px 0;
+}
+
+#content ol {
+  padding-left: 22px;
+  margin: 16px 0;
+}
+
+/* ——— Code ——— */
+#content code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+#content pre {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 16px;
+  overflow-x: auto;
+  margin: 20px 0;
+  line-height: 1.5;
+}
+
+#content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.85em;
+}
+
+/* ——— Tables ——— */
+#content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 20px 0;
+}
+
+#content th,
+#content td {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+#content th {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--accent);
 }
 
 /* ——— Images ——— */
 #content img {
   width: 100%;
   border-radius: 10px;
+  margin: 24px 0;
+}
+
+/* ——— Strong & Emphasis ——— */
+#content strong {
+  color: rgba(255, 255, 255, 0.95);
 }
 
 /* ——— Links ——— */
