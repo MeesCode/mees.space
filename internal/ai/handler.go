@@ -19,15 +19,37 @@ func NewHandler(db *sql.DB) *Handler {
 	return &Handler{db: db}
 }
 
+type ChatMessage struct {
+	Role string `json:"role"` // "user" or "assistant"
+	Text string `json:"text"`
+}
+
 type PromptRequest struct {
-	Prompt  string `json:"prompt"`
-	Content string `json:"content"`
+	Prompt  string        `json:"prompt"`
+	Content string        `json:"content"`
+	History []ChatMessage `json:"history"`
 }
 
 // Anthropic API types
+type anthropicContent struct {
+	Type      string `json:"type"`
+	Text      string `json:"text,omitempty"`
+	ID        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Input     any    `json:"input,omitempty"`
+	ToolUseID string `json:"tool_use_id,omitempty"`
+	Content   string `json:"content,omitempty"`
+}
+
 type anthropicMessage struct {
 	Role    string `json:"role"`
-	Content string `json:"content"`
+	Content any    `json:"content"` // string or []anthropicContent
+}
+
+type anthropicTool struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	InputSchema any    `json:"input_schema"`
 }
 
 type anthropicRequest struct {
@@ -36,6 +58,30 @@ type anthropicRequest struct {
 	Stream    bool               `json:"stream"`
 	System    string             `json:"system,omitempty"`
 	Messages  []anthropicMessage `json:"messages"`
+	Tools     []anthropicTool    `json:"tools,omitempty"`
+}
+
+// SSE event types sent to frontend
+type sseEvent struct {
+	Type    string `json:"type,omitempty"`    // "text" or "content"
+	Text    string `json:"text,omitempty"`    // for type=text (chat response)
+	Content string `json:"content,omitempty"` // for type=content (markdown artifact)
+	Error   string `json:"error,omitempty"`
+}
+
+var updateContentTool = anthropicTool{
+	Name:        "update_content",
+	Description: "Replace the current page content with new markdown. Use this tool when you need to create, edit, or rewrite the markdown content. Your text response (outside this tool) is shown as a chat message to the user — use it to explain what you did or answer questions.",
+	InputSchema: json.RawMessage(`{
+		"type": "object",
+		"properties": {
+			"markdown": {
+				"type": "string",
+				"description": "The complete new markdown content for the page"
+			}
+		},
+		"required": ["markdown"]
+	}`),
 }
 
 func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
@@ -64,21 +110,38 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Build the user message
+	// Build system prompt with tool usage guidance
+	fullSystemPrompt := systemPrompt
+	if fullSystemPrompt != "" {
+		fullSystemPrompt += "\n\n"
+	}
+	fullSystemPrompt += "You are an AI assistant integrated into a markdown content editor. " +
+		"When the user asks you to write, edit, or modify content, use the update_content tool to provide the new markdown. " +
+		"Your text responses are shown in a chat panel — use them to explain changes, answer questions, or discuss ideas. " +
+		"You don't always need to use the tool; only use it when the user wants content changes. " +
+		"IMPORTANT: Always include a short text response alongside any tool use — briefly explain what you changed or did. Never respond with only a tool call and no text."
+
+	// Build messages from history + current prompt
+	var messages []anthropicMessage
+	for _, msg := range req.History {
+		messages = append(messages, anthropicMessage{Role: msg.Role, Content: msg.Text})
+	}
+
+	// Build the current user message
 	userMessage := req.Prompt
 	if req.Content != "" {
 		userMessage = fmt.Sprintf("Here is the current markdown content:\n\n---\n%s\n---\n\nInstruction: %s", req.Content, req.Prompt)
 	}
+	messages = append(messages, anthropicMessage{Role: "user", Content: userMessage})
 
-	// Call Anthropic API with streaming
+	// Call Anthropic API with streaming and tool use
 	apiReq := anthropicRequest{
 		Model:     model,
 		MaxTokens: 4096,
 		Stream:    true,
-		System:    systemPrompt,
-		Messages: []anthropicMessage{
-			{Role: "user", Content: userMessage},
-		},
+		System:    fullSystemPrompt,
+		Messages:  messages,
+		Tools:     []anthropicTool{updateContentTool},
 	}
 
 	body, err := json.Marshal(apiReq)
@@ -133,9 +196,12 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	// Parse Anthropic SSE stream
+	// Parse Anthropic SSE stream, tracking content block types
 	scanner := bufio.NewScanner(resp.Body)
 	scanner.Buffer(make([]byte, 64*1024), 512*1024)
+
+	var currentBlockType string // "text" or "tool_use"
+	var toolInputJSON string    // accumulated JSON for tool_use input
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -151,10 +217,16 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 		}
 
 		var event struct {
-			Type  string `json:"type"`
-			Delta *struct {
+			Type         string `json:"type"`
+			Index        int    `json:"index"`
+			ContentBlock *struct {
 				Type string `json:"type"`
-				Text string `json:"text"`
+				Name string `json:"name,omitempty"`
+			} `json:"content_block,omitempty"`
+			Delta *struct {
+				Type        string `json:"type"`
+				Text        string `json:"text,omitempty"`
+				PartialJSON string `json:"partial_json,omitempty"`
 			} `json:"delta,omitempty"`
 		}
 
@@ -162,17 +234,51 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		if event.Type == "content_block_delta" && event.Delta != nil && event.Delta.Type == "text_delta" {
-			sseData, _ := json.Marshal(map[string]string{"text": event.Delta.Text})
-			fmt.Fprintf(w, "data: %s\n\n", sseData)
-			flusher.Flush()
-		}
+		switch event.Type {
+		case "content_block_start":
+			if event.ContentBlock != nil {
+				currentBlockType = event.ContentBlock.Type
+				if currentBlockType == "tool_use" {
+					toolInputJSON = ""
+				}
+			}
 
-		if event.Type == "message_stop" {
-			break
+		case "content_block_delta":
+			if event.Delta == nil {
+				continue
+			}
+			if event.Delta.Type == "text_delta" && currentBlockType == "text" {
+				// Stream text response as chat
+				evt := sseEvent{Type: "text", Text: event.Delta.Text}
+				sseData, _ := json.Marshal(evt)
+				fmt.Fprintf(w, "data: %s\n\n", sseData)
+				flusher.Flush()
+			} else if event.Delta.Type == "input_json_delta" && currentBlockType == "tool_use" {
+				// Accumulate tool input JSON
+				toolInputJSON += event.Delta.PartialJSON
+			}
+
+		case "content_block_stop":
+			if currentBlockType == "tool_use" && toolInputJSON != "" {
+				// Parse the tool input and send content update
+				var toolInput struct {
+					Markdown string `json:"markdown"`
+				}
+				if json.Unmarshal([]byte(toolInputJSON), &toolInput) == nil && toolInput.Markdown != "" {
+					evt := sseEvent{Type: "content", Content: toolInput.Markdown}
+					sseData, _ := json.Marshal(evt)
+					fmt.Fprintf(w, "data: %s\n\n", sseData)
+					flusher.Flush()
+				}
+			}
+			currentBlockType = ""
+
+		case "message_stop":
+			goto done
 		}
 	}
 
+done:
 	fmt.Fprintf(w, "data: [DONE]\n\n")
 	flusher.Flush()
 }

@@ -71,9 +71,12 @@ func main() {
 	mux.HandleFunc("POST /api/auth/login", authHandler.Login)
 	mux.HandleFunc("POST /api/auth/refresh", authHandler.Refresh)
 
-	// Pages (public)
-	mux.HandleFunc("GET /api/pages/tree", pagesHandler.GetTree)
-	mux.HandleFunc("GET /api/pages/{path...}", pagesHandler.GetPage)
+	// Pages (public, with optional auth to handle draft visibility)
+	optionalAuth := func(next http.HandlerFunc) http.Handler {
+		return auth.OptionalAuth(jwtSvc, next)
+	}
+	mux.Handle("GET /api/pages/tree", optionalAuth(pagesHandler.GetTree))
+	mux.Handle("GET /api/pages/{path...}", optionalAuth(pagesHandler.GetPage))
 	mux.HandleFunc("GET /feed.xml", pagesHandler.GetRSS)
 
 	// View count (separate route since wildcard must be at end)

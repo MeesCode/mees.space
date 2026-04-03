@@ -3,6 +3,8 @@ package pages
 import (
 	"encoding/json"
 	"net/http"
+
+	"mees.space/internal/auth"
 )
 
 type Handler struct {
@@ -14,7 +16,10 @@ func NewHandler(svc *Service) *Handler {
 }
 
 func (h *Handler) GetTree(w http.ResponseWriter, r *http.Request) {
-	includeDrafts := r.URL.Query().Get("drafts") == "true"
+	// Only include drafts if the request is authenticated
+	isAuthed := auth.GetUser(r.Context()) != nil
+	includeDrafts := isAuthed && r.URL.Query().Get("drafts") == "true"
+
 	tree, err := BuildContentTree(h.svc.db, h.svc.contentDir, includeDrafts)
 	if err != nil {
 		http.Error(w, `{"error":"failed to build tree"}`, http.StatusInternalServerError)
@@ -39,6 +44,13 @@ func (h *Handler) GetPage(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Hide unpublished pages from unauthenticated users
+	isAuthed := auth.GetUser(r.Context()) != nil
+	if !page.Published && !isAuthed {
+		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
 		return
 	}
 

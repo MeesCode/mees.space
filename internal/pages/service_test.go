@@ -104,7 +104,7 @@ func TestUpdatePage(t *testing.T) {
 
 	svc.CreatePage("home", "Home", "Original")
 
-	err := svc.UpdatePage("home", "Updated Home", "New content", nil, nil)
+	err := svc.UpdatePage("home", "Updated Home", "New content", nil, nil, nil)
 	if err != nil {
 		t.Fatalf("UpdatePage: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestUpdatePage_NotFound(t *testing.T) {
 	db, contentDir := setupTestDB(t)
 	svc := NewService(db, contentDir)
 
-	err := svc.UpdatePage("nonexistent", "Title", "Content", nil, nil)
+	err := svc.UpdatePage("nonexistent", "Title", "Content", nil, nil, nil)
 	if err != ErrNotFound {
 		t.Errorf("expected ErrNotFound, got %v", err)
 	}

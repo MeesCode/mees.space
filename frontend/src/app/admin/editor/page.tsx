@@ -46,6 +46,11 @@ export default function EditorPage() {
   const [saving, setSaving] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [aiMessages, setAiMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [aiPanelOpen, setAiPanelOpen] = useState(false);
+  const aiChatEndRef = useRef<HTMLDivElement>(null);
+  const [editorWidth, setEditorWidth] = useState(50); // percentage of editor area
+  const [aiPanelWidth, setAiPanelWidth] = useState(320); // pixels
   const [toast, setToast] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [showNewPage, setShowNewPage] = useState(false);
@@ -186,9 +191,24 @@ export default function EditorPage() {
     setTimeout(() => setToast(null), 5000);
   };
 
+  const scrollAiChat = () => {
+    setTimeout(() => aiChatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 0);
+  };
+
   const runAiPrompt = async () => {
     if (!aiPrompt.trim() || aiLoading) return;
+    const userMsg = aiPrompt.trim();
     setAiLoading(true);
+    setAiPanelOpen(true);
+
+    // Add user message to chat
+    const userEntry = { role: "user" as const, text: userMsg };
+    setAiMessages((prev) => [...prev, userEntry]);
+    setAiPrompt("");
+    scrollAiChat();
+
+    // Build history for API (exclude the message we're about to send)
+    const history = [...aiMessages].map((m) => ({ role: m.role, text: m.text }));
 
     const token = localStorage.getItem("access_token");
     try {
@@ -198,7 +218,7 @@ export default function EditorPage() {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ prompt: aiPrompt, content }),
+        body: JSON.stringify({ prompt: userMsg, content, history }),
       });
 
       const reader = res.body?.getReader();
@@ -208,10 +228,13 @@ export default function EditorPage() {
         return;
       }
 
+      // Add empty assistant message to stream into
+      const assistantIdx = aiMessages.length + 1; // +1 for the user message we just added
+      setAiMessages((prev) => [...prev, { role: "assistant", text: "" }]);
+
       const decoder = new TextDecoder();
-      let accumulated = "";
+      let accumulatedText = "";
       let buffer = "";
-      let firstChunk = true;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -230,26 +253,31 @@ export default function EditorPage() {
             const parsed = JSON.parse(data);
             if (parsed.error) {
               showToast(parsed.error);
+              setAiMessages((prev) => {
+                const updated = [...prev];
+                updated[assistantIdx] = { role: "assistant", text: "Error: " + parsed.error };
+                return updated;
+              });
               setAiLoading(false);
               return;
             }
-            if (parsed.text) {
-              accumulated += parsed.text;
-              if (firstChunk) {
-                setContent(accumulated);
-                firstChunk = false;
-              } else {
-                setContent(accumulated);
-              }
+            if (parsed.type === "text" && parsed.text) {
+              accumulatedText += parsed.text;
+              const text = accumulatedText;
+              setAiMessages((prev) => {
+                const updated = [...prev];
+                updated[assistantIdx] = { role: "assistant", text };
+                return updated;
+              });
+              scrollAiChat();
+            }
+            if (parsed.type === "content" && parsed.content) {
+              setContent(parsed.content);
             }
           } catch {
             // skip unparseable lines
           }
         }
-      }
-
-      if (accumulated) {
-        setAiPrompt("");
       }
     } catch {
       showToast("AI request failed — check your connection");
@@ -583,83 +611,177 @@ export default function EditorPage() {
                   }}
                 />
               </label>
-            </div>
-
-            {/* AI Prompt */}
-            <div
-              style={{
-                padding: "6px 16px",
-                borderBottom: "1px solid rgba(255,255,255,0.1)",
-                display: "flex",
-                gap: "8px",
-                alignItems: "center",
-              }}
-            >
-              <span
+              <span style={{ flex: 1 }} />
+              <button
+                onClick={() => setAiPanelOpen(!aiPanelOpen)}
                 style={{
-                  color: "var(--accent)",
+                  background: aiPanelOpen ? "rgba(51,172,183,0.2)" : "rgba(255,255,255,0.05)",
+                  border: `1px solid ${aiPanelOpen ? "var(--accent)" : "rgba(255,255,255,0.1)"}`,
+                  borderRadius: "3px",
+                  color: aiPanelOpen ? "var(--accent)" : "var(--color)",
+                  padding: "3px 8px",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
                   fontSize: "0.75rem",
-                  flexShrink: 0,
-                  opacity: 0.7,
                 }}
               >
                 AI
-              </span>
-              <input
-                value={aiPrompt}
-                onChange={(e) => setAiPrompt(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    runAiPrompt();
-                  }
-                }}
-                placeholder="e.g. translate to English, make more concise, add a conclusion..."
-                disabled={aiLoading}
-                style={{
-                  flex: 1,
-                  background: "var(--background)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: "4px",
-                  padding: "5px 10px",
-                  color: "var(--color)",
-                  fontFamily: "inherit",
-                  fontSize: "0.8rem",
-                  outline: "none",
-                }}
-              />
-              <button
-                onClick={runAiPrompt}
-                disabled={aiLoading || !aiPrompt.trim()}
-                style={{
-                  background: aiLoading ? "rgba(51,172,183,0.3)" : "var(--accent)",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "5px 12px",
-                  color: "#000",
-                  fontFamily: "inherit",
-                  fontWeight: "bold",
-                  cursor: aiLoading ? "wait" : "pointer",
-                  fontSize: "0.75rem",
-                  flexShrink: 0,
-                }}
-              >
-                {aiLoading ? "Working..." : "Run"}
               </button>
             </div>
 
-            {/* Editor + Preview */}
+            {/* Editor + Preview + AI Panel */}
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* AI Panel (collapsible, left side) */}
+              {aiPanelOpen && (
+                <div
+                  style={{
+                    width: `${aiPanelWidth}px`,
+                    display: "flex",
+                    flexDirection: "column",
+                    flexShrink: 0,
+                    background: "rgba(255,255,255,0.02)",
+                  }}
+                >
+                  {/* AI Panel Header */}
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      borderBottom: "1px solid rgba(255,255,255,0.1)",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ color: "var(--accent)", fontSize: "0.75rem", fontWeight: "bold" }}>
+                      AI Assistant
+                    </span>
+                    <button
+                      onClick={() => setAiPanelOpen(false)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "rgba(255,255,255,0.4)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                        fontSize: "0.9rem",
+                        padding: "0 4px",
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Chat Messages */}
+                  <div
+                    style={{
+                      flex: 1,
+                      overflow: "auto",
+                      padding: "12px",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}
+                  >
+                    {aiMessages.length === 0 && (
+                      <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "0.8rem" }}>
+                        Ask me to edit your content, translate, summarize, or answer questions...
+                      </span>
+                    )}
+                    {aiMessages.map((msg, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                          maxWidth: "85%",
+                          padding: "8px 12px",
+                          borderRadius: msg.role === "user" ? "12px 12px 2px 12px" : "12px 12px 12px 2px",
+                          background: msg.role === "user"
+                            ? "rgba(51,172,183,0.2)"
+                            : "rgba(255,255,255,0.06)",
+                          color: msg.role === "user"
+                            ? "var(--accent)"
+                            : "rgba(255,255,255,0.8)",
+                          fontSize: "0.8rem",
+                          lineHeight: "1.5",
+                          whiteSpace: "pre-wrap",
+                          wordBreak: "break-word",
+                        }}
+                      >
+                        {msg.text || (msg.role === "assistant" && aiLoading ? "..." : "")}
+                      </div>
+                    ))}
+                    <div ref={aiChatEndRef} />
+                  </div>
+
+                  {/* AI Input Area */}
+                  <div
+                    style={{
+                      padding: "8px 12px",
+                      borderTop: "1px solid rgba(255,255,255,0.1)",
+                      display: "flex",
+                      gap: "6px",
+                    }}
+                  >
+                    <input
+                      value={aiPrompt}
+                      onChange={(e) => setAiPrompt(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          runAiPrompt();
+                        }
+                      }}
+                      placeholder="Ask AI..."
+                      disabled={aiLoading}
+                      style={{
+                        flex: 1,
+                        background: "var(--background)",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                        borderRadius: "4px",
+                        padding: "6px 10px",
+                        color: "var(--color)",
+                        fontFamily: "inherit",
+                        fontSize: "0.8rem",
+                        outline: "none",
+                      }}
+                    />
+                    <button
+                      onClick={runAiPrompt}
+                      disabled={aiLoading || !aiPrompt.trim()}
+                      style={{
+                        background: aiLoading ? "rgba(51,172,183,0.3)" : "var(--accent)",
+                        border: "none",
+                        borderRadius: "4px",
+                        padding: "6px 12px",
+                        color: "#000",
+                        fontFamily: "inherit",
+                        fontWeight: "bold",
+                        cursor: aiLoading ? "wait" : "pointer",
+                        fontSize: "0.75rem",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {aiLoading ? "..." : "→"}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {aiPanelOpen && (
+                <DragHandle
+                  onDrag={(delta) => setAiPanelWidth((w) => Math.max(200, Math.min(600, w + delta)))}
+                />
+              )}
               <textarea
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 style={{
-                  flex: 1,
+                  width: `${editorWidth}%`,
+                  flexShrink: 0,
+                  flexGrow: 0,
                   background: "var(--background)",
                   color: "var(--color)",
                   border: "none",
-                  borderRight: "1px solid rgba(255,255,255,0.1)",
                   padding: "16px",
                   fontFamily: "inherit",
                   fontSize: "0.85rem",
@@ -668,11 +790,20 @@ export default function EditorPage() {
                   outline: "none",
                 }}
               />
+              <DragHandle
+                onDrag={(delta, containerWidth) => {
+                  setEditorWidth((w) => {
+                    const pct = (delta / containerWidth) * 100;
+                    return Math.max(20, Math.min(80, w + pct));
+                  });
+                }}
+              />
               <div
                 style={{
                   flex: 1,
                   overflow: "auto",
                   padding: "0 16px",
+                  minWidth: 0,
                 }}
               >
                 <MarkdownRenderer content={content} />
@@ -1004,6 +1135,67 @@ function SmallButton({
     >
       {children}
     </button>
+  );
+}
+
+function DragHandle({
+  onDrag,
+}: {
+  onDrag: (deltaX: number, containerWidth: number) => void;
+}) {
+  const handleRef = useRef<HTMLDivElement>(null);
+
+  const onMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const container = handleRef.current?.parentElement;
+      const containerWidth = container?.clientWidth || 1;
+
+      const onMouseMove = (e: MouseEvent) => {
+        const delta = e.clientX - startX;
+        onDrag(delta, containerWidth);
+        // Reset startX so delta is incremental
+        (onMouseMove as any)._startX = e.clientX;
+      };
+
+      // Use incremental deltas
+      let lastX = startX;
+      const onMove = (e: MouseEvent) => {
+        const delta = e.clientX - lastX;
+        lastX = e.clientX;
+        onDrag(delta, containerWidth);
+      };
+
+      const onMouseUp = () => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onMouseUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      };
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    },
+    [onDrag]
+  );
+
+  return (
+    <div
+      ref={handleRef}
+      onMouseDown={onMouseDown}
+      style={{
+        width: "5px",
+        cursor: "col-resize",
+        flexShrink: 0,
+        background: "rgba(255,255,255,0.06)",
+        transition: "background 0.15s",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(51,172,183,0.3)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.06)")}
+    />
   );
 }
 

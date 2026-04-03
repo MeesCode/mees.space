@@ -50,3 +50,27 @@ func GetUser(ctx context.Context) *UserInfo {
 	u, _ := ctx.Value(UserContextKey).(*UserInfo)
 	return u
 }
+
+// OptionalAuth is middleware that attaches user info to the context if a valid
+// token is present, but does not reject unauthenticated requests.
+func OptionalAuth(jwtSvc *JWTService, next http.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) == 2 && strings.EqualFold(parts[0], "bearer") {
+				if claims, err := jwtSvc.ValidateAccessToken(parts[1]); err == nil {
+					userID := int(claims["user_id"].(float64))
+					username, _ := claims["username"].(string)
+					ctx := context.WithValue(r.Context(), UserContextKey, &UserInfo{
+						ID:       userID,
+						Username: username,
+					})
+					next.ServeHTTP(w, r.WithContext(ctx))
+					return
+				}
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
+}
