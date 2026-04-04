@@ -46,7 +46,7 @@ export default function EditorPage() {
   const [saving, setSaving] = useState(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  const [aiMessages, setAiMessages] = useState<{ role: "user" | "assistant"; text: string }[]>([]);
+  const [aiMessages, setAiMessages] = useState<{ role: "user" | "assistant"; text: string; contentStatus?: "generating" | "done" }[]>([]);
   const [aiPanelOpen, setAiPanelOpen] = useState(false);
   const aiChatEndRef = useRef<HTMLDivElement>(null);
   const [editorWidth, setEditorWidth] = useState(50); // percentage of editor area
@@ -208,7 +208,7 @@ export default function EditorPage() {
     scrollAiChat();
 
     // Build history for API (exclude the message we're about to send)
-    const history = [...aiMessages].map((m) => ({ role: m.role, text: m.text }));
+    const history = [...aiMessages].filter((m) => !m.contentStatus).map((m) => ({ role: m.role, text: m.text }));
 
     const token = localStorage.getItem("access_token");
     try {
@@ -235,6 +235,7 @@ export default function EditorPage() {
       const decoder = new TextDecoder();
       let accumulatedText = "";
       let buffer = "";
+      let contentIndicatorAdded = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -271,8 +272,24 @@ export default function EditorPage() {
               });
               scrollAiChat();
             }
+            if (parsed.type === "content_start") {
+              contentIndicatorAdded = true;
+              setAiMessages((prev) => [...prev, { role: "assistant", text: "", contentStatus: "generating" }]);
+              scrollAiChat();
+            }
             if (parsed.type === "content" && parsed.content) {
               setContent(parsed.content);
+              if (contentIndicatorAdded) {
+                setAiMessages((prev) => {
+                  const updated = [...prev];
+                  const idx = updated.findLastIndex((m) => m.contentStatus === "generating");
+                  if (idx >= 0) updated[idx] = { ...updated[idx], contentStatus: "done" };
+                  return updated;
+                });
+              } else {
+                setAiMessages((prev) => [...prev, { role: "assistant", text: "", contentStatus: "done" }]);
+              }
+              scrollAiChat();
             }
           } catch {
             // skip unparseable lines
@@ -707,7 +724,22 @@ export default function EditorPage() {
                           wordBreak: "break-word",
                         }}
                       >
-                        {msg.text || (msg.role === "assistant" && aiLoading ? "..." : "")}
+                        {msg.contentStatus ? (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontStyle: "italic",
+                            color: msg.contentStatus === "generating" ? "var(--accent)" : "rgba(255,255,255,0.4)",
+                            fontSize: "0.75rem",
+                          }}>
+                            {msg.contentStatus === "generating" ? (
+                              <><span style={{ animation: "pulse 1.5s infinite", display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: "var(--accent)" }} /> Updating content...</>
+                            ) : (
+                              <><span style={{ color: "var(--accent)" }}>&#10003;</span> Content updated</>
+                            )}
+                          </span>
+                        ) : msg.text || (msg.role === "assistant" && aiLoading ? "..." : "")}
                       </div>
                     ))}
                     <div ref={aiChatEndRef} />
@@ -799,6 +831,7 @@ export default function EditorPage() {
                 }}
               />
               <div
+                className="editor-preview"
                 style={{
                   flex: 1,
                   overflow: "auto",

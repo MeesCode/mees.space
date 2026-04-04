@@ -59,6 +59,10 @@ body {
   border-left: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+.editor-preview #content {
+  border-left: none;
+}
+
 /* ——— Responsive ——— */
 @media (max-width: 940px) {
   .app-container {
@@ -510,6 +514,16 @@ html {
 @keyframes rotate {
   100% {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
   }
 }
 

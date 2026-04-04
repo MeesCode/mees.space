@@ -240,6 +240,11 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 				currentBlockType = event.ContentBlock.Type
 				if currentBlockType == "tool_use" {
 					toolInputJSON = ""
+					// Notify frontend that content generation is starting
+					evt := sseEvent{Type: "content_start"}
+					sseData, _ := json.Marshal(evt)
+					fmt.Fprintf(w, "data: %s\n\n", sseData)
+					flusher.Flush()
 				}
 			}
 
@@ -260,7 +265,7 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 
 		case "content_block_stop":
 			if currentBlockType == "tool_use" && toolInputJSON != "" {
-				// Parse the tool input and send content update
+				// Send final complete content
 				var toolInput struct {
 					Markdown string `json:"markdown"`
 				}
