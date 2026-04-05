@@ -182,6 +182,53 @@ func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, pu
 	return nil
 }
 
+func (s *Service) RenamePage(oldPath, newPath string) error {
+	cleanOld, err := sanitizePath(oldPath)
+	if err != nil {
+		return ErrInvalidPath
+	}
+	cleanNew, err := sanitizePath(newPath)
+	if err != nil {
+		return ErrInvalidPath
+	}
+	if cleanOld == cleanNew {
+		return nil
+	}
+
+	oldFile := filepath.Join(s.contentDir, cleanOld+".md")
+	newFile := filepath.Join(s.contentDir, cleanNew+".md")
+	if !s.isWithinContentDir(oldFile) || !s.isWithinContentDir(newFile) {
+		return ErrInvalidPath
+	}
+
+	if _, err := os.Stat(oldFile); os.IsNotExist(err) {
+		return ErrNotFound
+	}
+	if _, err := os.Stat(newFile); err == nil {
+		return ErrExists
+	}
+
+	// Ensure destination directory exists
+	if dir := filepath.Dir(newFile); dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("create directory: %w", err)
+		}
+	}
+
+	if err := os.Rename(oldFile, newFile); err != nil {
+		return fmt.Errorf("rename file: %w", err)
+	}
+
+	_, err = s.db.Exec("UPDATE pages SET path = ? WHERE path = ?", cleanNew, cleanOld)
+	if err != nil {
+		// Try to roll back the file rename
+		os.Rename(newFile, oldFile)
+		return fmt.Errorf("update path in db: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Service) DeletePage(pagePath string) error {
 	clean, err := sanitizePath(pagePath)
 	if err != nil {

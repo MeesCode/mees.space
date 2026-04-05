@@ -85,6 +85,7 @@ func main() {
 	// Pages (protected)
 	mux.Handle("POST /api/pages/{path...}", protected(pagesHandler.CreatePage))
 	mux.Handle("PUT /api/pages/{path...}", protected(pagesHandler.UpdatePage))
+	mux.Handle("PATCH /api/pages/{path...}", protected(pagesHandler.RenamePage))
 	mux.Handle("DELETE /api/pages/{path...}", protected(pagesHandler.DeletePage))
 
 	// Folders (protected)

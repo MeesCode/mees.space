@@ -608,15 +608,23 @@ export default function EditorPage() {
                 gap: "12px",
               }}
             >
-              <span
-                style={{
-                  color: "rgba(255,255,255,0.4)",
-                  fontSize: "0.8rem",
-                  flexShrink: 0,
+              <EditablePath
+                path={selectedPath}
+                onRename={async (newPath) => {
+                  const res = await apiFetch(`/api/pages/${selectedPath}`, {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ new_path: newPath }),
+                  });
+                  if (res.ok) {
+                    setSelectedPath(newPath);
+                    loadTree();
+                    return null;
+                  }
+                  const data = await res.json().catch(() => ({ error: "Rename failed" }));
+                  return data.error || "Rename failed";
                 }}
-              >
-                {selectedPath}
-              </span>
+              />
               <input
                 value={title}
                 onChange={(e) => { setTitle(e.target.value); setContentSource("user"); }}
@@ -1250,6 +1258,87 @@ function FolderNode({
         />
       )}
     </div>
+  );
+}
+
+function EditablePath({
+  path,
+  onRename,
+}: {
+  path: string;
+  onRename: (newPath: string) => Promise<string | null>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(path);
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { setValue(path); setEditing(false); setError(null); }, [path]);
+  useEffect(() => { if (editing) inputRef.current?.select(); }, [editing]);
+
+  const submit = async () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === path) {
+      setEditing(false);
+      setValue(path);
+      setError(null);
+      return;
+    }
+    const err = await onRename(trimmed);
+    if (err) {
+      setError(err);
+    } else {
+      setEditing(false);
+      setError(null);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <span
+        onClick={() => setEditing(true)}
+        title="Click to rename"
+        style={{
+          color: "rgba(255,255,255,0.4)",
+          fontSize: "0.8rem",
+          flexShrink: 0,
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+        }}
+      >
+        {path}
+        <Pencil size={11} style={{ opacity: 0.5 }} />
+      </span>
+    );
+  }
+
+  return (
+    <span style={{ flexShrink: 0, display: "flex", alignItems: "center", gap: "6px" }}>
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => { setValue(e.target.value); setError(null); }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+          if (e.key === "Escape") { setEditing(false); setValue(path); setError(null); }
+        }}
+        onBlur={submit}
+        style={{
+          background: "var(--background)",
+          border: `1px solid ${error ? "rgba(255,100,100,0.5)" : "rgba(255,255,255,0.2)"}`,
+          borderRadius: "3px",
+          padding: "2px 6px",
+          color: "var(--color)",
+          fontFamily: "inherit",
+          fontSize: "0.8rem",
+          outline: "none",
+          width: `${Math.max(value.length, 10)}ch`,
+        }}
+      />
+      {error && <span style={{ color: "#ff6b6b", fontSize: "0.75rem" }}>{error}</span>}
+    </span>
   );
 }
 

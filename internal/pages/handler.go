@@ -123,6 +123,44 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{"path": pagePath, "title": req.Title})
 }
 
+func (h *Handler) RenamePage(w http.ResponseWriter, r *http.Request) {
+	oldPath := extractPath(r)
+
+	var req struct {
+		NewPath string `json:"new_path"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		return
+	}
+
+	if req.NewPath == "" {
+		http.Error(w, `{"error":"new_path is required"}`, http.StatusBadRequest)
+		return
+	}
+
+	err := h.svc.RenamePage(oldPath, req.NewPath)
+	if err == ErrNotFound {
+		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		return
+	}
+	if err == ErrExists {
+		http.Error(w, `{"error":"a page already exists at that path"}`, http.StatusConflict)
+		return
+	}
+	if err == ErrInvalidPath {
+		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"path": req.NewPath})
+}
+
 func (h *Handler) DeletePage(w http.ResponseWriter, r *http.Request) {
 	pagePath := extractPath(r)
 
