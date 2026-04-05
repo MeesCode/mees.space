@@ -249,8 +249,12 @@ export default function EditorPage() {
     setAiPrompt("");
     scrollAiChat();
 
-    // Build history for API (exclude the message we're about to send)
-    const history = [...aiMessages].filter((m) => !m.contentStatus).map((m) => ({ role: m.role, text: m.text }));
+    // Build history for API (include content edit markers)
+    const history = [...aiMessages].map((m) => ({
+      role: m.role,
+      text: m.text,
+      ...(m.contentStatus === "done" ? { content_edit: true } : {}),
+    })).filter((m) => m.text || m.content_edit);
 
     const token = localStorage.getItem("access_token");
     try {

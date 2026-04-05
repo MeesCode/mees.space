@@ -16,7 +16,10 @@
       "Bash(ls /mnt/c/Users/mbrin/git/mees.space/dist/*.html)",
       "Bash(ls /mnt/c/Users/mbrin/git/mees.space/dist/admin/**/*.html)",
       "Bash(npx tsc:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(ls /mnt/c/Users/meesb/git/mees.space/dist/admin*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{redirect_url}\" http://localhost:3000/admin)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{redirect_url}\" http://localhost:8080/admin)"
     ]
   }
 }

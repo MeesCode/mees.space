@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { isLoggedIn } from "@/lib/auth";
 
 export default function AdminLayout({
@@ -10,7 +10,6 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [checked, setChecked] = useState(false);
 
   useEffect(() => {
@@ -19,11 +18,12 @@ export default function AdminLayout({
       return;
     }
     if (!isLoggedIn()) {
-      router.replace("/admin/login");
+      window.location.replace("/admin/login");
+      return;
     } else {
       setChecked(true);
     }
-  }, [pathname, router]);
+  }, [pathname]);
 
   if (!checked && pathname !== "/admin/login") {
     return null;

@@ -20,8 +20,9 @@ func NewHandler(db *sql.DB) *Handler {
 }
 
 type ChatMessage struct {
-	Role string `json:"role"` // "user" or "assistant"
-	Text string `json:"text"`
+	Role        string `json:"role"` // "user" or "assistant"
+	Text        string `json:"text"`
+	ContentEdit bool   `json:"content_edit,omitempty"`
 }
 
 type PromptRequest struct {
@@ -119,12 +120,22 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 		"When the user asks you to write, edit, or modify content, use the update_content tool to provide the new markdown. " +
 		"Your text responses are shown in a chat panel — use them to explain changes, answer questions, or discuss ideas. " +
 		"You don't always need to use the tool; only use it when the user wants content changes. " +
-		"IMPORTANT: Always include a short text response alongside any tool use — briefly explain what you changed or did. Never respond with only a tool call and no text."
+		"IMPORTANT: Always include a short text response alongside any tool use — briefly explain what you changed or did. Never respond with only a tool call and no text.\n\n" +
+		"Chat history context: Messages marked with [You edited the page content] indicate where you previously used the update_content tool. " +
+		"The user may have reverted your changes — always trust the current content provided with the latest message as the actual state, not your memory of past edits. " +
+		"Only the last user message is the active instruction. Earlier messages are context only."
 
 	// Build messages from history + current prompt
 	var messages []anthropicMessage
 	for _, msg := range req.History {
-		messages = append(messages, anthropicMessage{Role: msg.Role, Content: msg.Text})
+		text := msg.Text
+		if msg.ContentEdit {
+			text = "[You edited the page content]"
+		}
+		if text == "" {
+			continue
+		}
+		messages = append(messages, anthropicMessage{Role: msg.Role, Content: text})
 	}
 
 	// Build the current user message
