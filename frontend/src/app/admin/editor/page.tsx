@@ -60,6 +60,10 @@ export default function EditorPage() {
   const [newFolder, setNewFolder] = useState("");
   const [newFolderParent, setNewFolderParent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [preAiContent, setPreAiContent] = useState<string | null>(null);
+  const [contentSource, setContentSource] = useState<"user" | "ai" | "load">("load");
+  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preAiContentRef = useRef<string | null>(null);
 
   const loadTree = useCallback(async () => {
     const res = await apiFetch("/api/pages/tree?drafts=true");
@@ -73,7 +77,42 @@ export default function EditorPage() {
     loadTree();
   }, [loadTree]);
 
+  // Keep ref in sync with state to avoid stale closures in SSE handler
+  useEffect(() => { preAiContentRef.current = preAiContent; }, [preAiContent]);
+
+  // Auto-save: only for user-initiated changes, debounced
+  useEffect(() => {
+    if (contentSource !== "user") return;
+    if (!selectedPath) return;
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+    }
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      const res = await apiFetch(`/api/pages/${selectedPath}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content, show_date: showDate, published, created_at: createdAt }),
+      });
+      setMessage(res.ok ? "Auto-saved" : "Auto-save failed");
+      if (res.ok) loadTree();
+      setTimeout(() => setMessage(""), 2000);
+    }, 2500);
+
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content, title, showDate, published, createdAt, contentSource, selectedPath]);
+
   const loadPage = async (path: string) => {
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
     const res = await apiFetch(`/api/pages/${path}`);
     if (res.ok) {
       const data: PageData = await res.json();
@@ -85,6 +124,9 @@ export default function EditorPage() {
       setCreatedAt(data.created_at);
       setMeta({ view_count: data.view_count, created_at: data.created_at });
       setMessage("");
+      setContentSource("load");
+      setPreAiContent(null);
+      preAiContentRef.current = null;
     }
   };
 
@@ -278,7 +320,14 @@ export default function EditorPage() {
               scrollAiChat();
             }
             if (parsed.type === "content" && parsed.content) {
-              setContent(parsed.content);
+              setContent((prev) => {
+                if (preAiContentRef.current === null) {
+                  setPreAiContent(prev);
+                  preAiContentRef.current = prev;
+                }
+                return parsed.content;
+              });
+              setContentSource("ai");
               if (contentIndicatorAdded) {
                 setAiMessages((prev) => {
                   const updated = [...prev];
@@ -313,6 +362,7 @@ export default function EditorPage() {
         const pos = ta.selectionStart;
         const md = `![${file.name}](${data.url})`;
         setContent((prev) => prev.slice(0, pos) + md + prev.slice(pos));
+        setContentSource("user");
       }
     }
   };
@@ -325,6 +375,7 @@ export default function EditorPage() {
     const selected = content.slice(start, end);
     const replacement = before + selected + after;
     setContent((prev) => prev.slice(0, start) + replacement + prev.slice(end));
+    setContentSource("user");
     setTimeout(() => {
       ta.focus();
       ta.setSelectionRange(
@@ -564,7 +615,7 @@ export default function EditorPage() {
               </span>
               <input
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={(e) => { setTitle(e.target.value); setContentSource("user"); }}
                 placeholder="Page title"
                 style={{
                   ...inputStyle,
@@ -803,25 +854,77 @@ export default function EditorPage() {
                   onDrag={(delta) => setAiPanelWidth((w) => Math.max(200, Math.min(600, w + delta)))}
                 />
               )}
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                style={{
-                  width: `${editorWidth}%`,
-                  flexShrink: 0,
-                  flexGrow: 0,
-                  background: "var(--background)",
-                  color: "var(--color)",
-                  border: "none",
-                  padding: "16px",
-                  fontFamily: "inherit",
-                  fontSize: "0.85rem",
-                  lineHeight: "1.6",
-                  resize: "none",
-                  outline: "none",
-                }}
-              />
+              <div style={{ width: `${editorWidth}%`, flexShrink: 0, flexGrow: 0, display: "flex", flexDirection: "column" }}>
+                {preAiContent !== null && (
+                  <div style={{
+                    padding: "6px 16px",
+                    background: "rgba(51, 172, 183, 0.08)",
+                    borderBottom: "1px solid rgba(51, 172, 183, 0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    fontSize: "0.8rem",
+                  }}>
+                    <span style={{ color: "rgba(255,255,255,0.5)" }}>
+                      AI edited this content
+                    </span>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        onClick={() => {
+                          setContent(preAiContent);
+                          setPreAiContent(null);
+                          preAiContentRef.current = null;
+                          setContentSource("user");
+                        }}
+                        style={{
+                          background: "none",
+                          border: "1px solid rgba(255, 100, 100, 0.4)",
+                          borderRadius: "3px",
+                          padding: "2px 10px",
+                          color: "#ff6b6b",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        Revert
+                      </button>
+                      <button
+                        onClick={() => { setPreAiContent(null); preAiContentRef.current = null; }}
+                        style={{
+                          background: "none",
+                          border: "1px solid rgba(255,255,255,0.15)",
+                          borderRadius: "3px",
+                          padding: "2px 10px",
+                          color: "rgba(255,255,255,0.5)",
+                          cursor: "pointer",
+                          fontFamily: "inherit",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <textarea
+                  ref={textareaRef}
+                  value={content}
+                  onChange={(e) => { setContent(e.target.value); setContentSource("user"); }}
+                  style={{
+                    flex: 1,
+                    background: "var(--background)",
+                    color: "var(--color)",
+                    border: "none",
+                    padding: "16px",
+                    fontFamily: "inherit",
+                    fontSize: "0.85rem",
+                    lineHeight: "1.6",
+                    resize: "none",
+                    outline: "none",
+                  }}
+                />
+              </div>
               <DragHandle
                 onDrag={(delta, containerWidth) => {
                   setEditorWidth((w) => {
@@ -865,6 +968,7 @@ export default function EditorPage() {
                         const date = e.target.value;
                         if (date) {
                           setCreatedAt(date + "T00:00:00Z");
+                          setContentSource("user");
                         }
                       }}
                       style={{
@@ -885,7 +989,7 @@ export default function EditorPage() {
                     <input
                       type="checkbox"
                       checked={showDate}
-                      onChange={(e) => setShowDate(e.target.checked)}
+                      onChange={(e) => { setShowDate(e.target.checked); setContentSource("user"); }}
                       style={{ accentColor: "var(--accent)" }}
                     />
                     Show date
@@ -894,7 +998,7 @@ export default function EditorPage() {
                     <input
                       type="checkbox"
                       checked={published}
-                      onChange={(e) => setPublished(e.target.checked)}
+                      onChange={(e) => { setPublished(e.target.checked); setContentSource("user"); }}
                       style={{ accentColor: "var(--accent)" }}
                     />
                     Published

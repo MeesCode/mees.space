@@ -1,4 +1,4 @@
-# who i am
+# who i am lets go dit is een test
 
 I am a software developer based in the Netherlands. I love working with embedded software and have nearly a decade of full-stack development under my belt. Most of my time is spent tinkering with electronics, recreational programming and side projects. I'm a massive robotics enthusiast and have had the luck of meeting others who share this passion.
 
@@ -19,7 +19,7 @@ I have a decent collection of musical instruments, most of which i don't know ho
 - I am a member of the [Robotics Study Association](https://rsadelft.nl/) (RSA) that aims to connect students in the robotics community to the industry.
 - Ever since the first day of my student life I have been a member of [De Bolk](https://debolk.nl/), a student association with no purpose other than having fun. This is a great place for me to work on some programming projects because there are a lot of people to test my software on.
 
-# certifications
+# certifications dqdwqddqwdqw
 
 - [iSAQB Certified Professional for Software Architecture — Foundation Level](https://certificates.future-network-cert.com/86cf0bc3-0fe4-4691-8c89-d7d4750dc1cd) (CPSA-F), february 2026.
 - [Professional Scrum Master I](https://www.credly.com/badges/40b94ac3-4b8e-4c05-bcd1-d47cf78fbd20/public_url) (PSM I), october 2023.
