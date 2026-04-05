@@ -19,7 +19,14 @@
       "Bash(npm run:*)",
       "Bash(ls /mnt/c/Users/meesb/git/mees.space/dist/admin*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code} %{redirect_url}\" http://localhost:3000/admin)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code} %{redirect_url}\" http://localhost:8080/admin)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{redirect_url}\" http://localhost:8080/admin)",
+      "Bash(go version:*)",
+      "Bash(npm list:*)",
+      "Bash(npm outdated:*)",
+      "Bash(go mod:*)",
+      "Bash(find . -type f \\\\\\( -name \"*.go\" -o -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) ! -path \"./node_modules/*\" ! -path \"./frontend/node_modules/*\" -exec wc -l {} +)",
+      "Bash(grep:*)",
+      "Bash(npm ls:*)"
     ]
   }
 }

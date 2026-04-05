@@ -99,11 +99,28 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 
 	// Get API key, system prompt, and model from settings
 	var apiKey, systemPrompt, model string
-	h.db.QueryRow("SELECT value FROM settings WHERE key = 'ai_api_key'").Scan(&apiKey)
-	h.db.QueryRow("SELECT value FROM settings WHERE key = 'ai_system_prompt'").Scan(&systemPrompt)
-	h.db.QueryRow("SELECT value FROM settings WHERE key = 'ai_model'").Scan(&model)
+	settings := map[string]*string{
+		"ai_api_key":       &apiKey,
+		"ai_system_prompt": &systemPrompt,
+		"ai_model":         &model,
+	}
+	rows, err := h.db.Query("SELECT key, value FROM settings WHERE key IN ('ai_api_key', 'ai_system_prompt', 'ai_model')")
+	if err != nil {
+		writeSSEError(w, "failed to load settings")
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			continue
+		}
+		if dest, ok := settings[key]; ok {
+			*dest = value
+		}
+	}
 	if model == "" {
-		model = "claude-sonnet-4-20250514"
+		model = "claude-sonnet-4-6-20250627"
 	}
 
 	if apiKey == "" {

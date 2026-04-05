@@ -4,15 +4,7 @@ import { useEffect, useState } from "react";
 import { useNavigation } from "@/lib/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { TerminalPrompt } from "@/components/TerminalPrompt";
-
-interface PageData {
-  path: string;
-  title: string;
-  content: string;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-}
+import { PageData } from "@/lib/types";
 
 export function ContentPage() {
   const { path } = useNavigation();

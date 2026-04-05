@@ -547,3 +547,73 @@ html {
     transform: translateY(0);
   }
 }
+
+/* ——— Admin Utility Classes ——— */
+.form-input {
+  background: var(--background);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: var(--color);
+  font-family: inherit;
+  font-size: 0.85rem;
+  outline: none;
+  width: 100%;
+}
+
+.form-input:focus {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.form-label {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.btn {
+  border: none;
+  border-radius: 4px;
+  padding: 6px 16px;
+  font-family: inherit;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #000;
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.btn-danger {
+  background: none;
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  color: #ff6b6b;
+}
+
+.btn-small {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+  padding: 4px 10px;
+  color: var(--color);
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.text-muted {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.text-accent {
+  color: var(--accent);
+}

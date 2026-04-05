@@ -147,9 +147,9 @@ export default function SettingsPage() {
             appearance: "auto" as const,
           }}
         >
-          <option value="claude-haiku-3-5-20241022">Claude 3.5 Haiku (fast, cheap)</option>
-          <option value="claude-sonnet-4-20250514">Claude Sonnet 4 (balanced)</option>
-          <option value="claude-opus-4-20250514">Claude Opus 4 (smartest)</option>
+          <option value="claude-haiku-4-5-20251001">Claude 4.5 Haiku (fast, cheap)</option>
+          <option value="claude-sonnet-4-6-20250627">Claude 4.6 Sonnet (balanced)</option>
+          <option value="claude-opus-4-6-20250527">Claude 4.6 Opus (smartest)</option>
         </select>
       </div>
 

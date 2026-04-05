@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"mees.space/internal/auth"
+	"mees.space/internal/httputil"
 )
 
 type Handler struct {
@@ -22,7 +23,7 @@ func (h *Handler) GetTree(w http.ResponseWriter, r *http.Request) {
 
 	tree, err := BuildContentTree(h.svc.db, h.svc.contentDir, includeDrafts)
 	if err != nil {
-		http.Error(w, `{"error":"failed to build tree"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "failed to build tree", http.StatusInternalServerError)
 		return
 	}
 
@@ -35,22 +36,22 @@ func (h *Handler) GetPage(w http.ResponseWriter, r *http.Request) {
 
 	page, err := h.svc.GetPage(pagePath)
 	if err == ErrNotFound {
-		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "page not found", http.StatusNotFound)
 		return
 	}
 	if err == ErrInvalidPath {
-		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid path", http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	// Hide unpublished pages from unauthenticated users
 	isAuthed := auth.GetUser(r.Context()) != nil
 	if !page.Published && !isAuthed {
-		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "page not found", http.StatusNotFound)
 		return
 	}
 
@@ -63,26 +64,26 @@ func (h *Handler) CreatePage(w http.ResponseWriter, r *http.Request) {
 
 	var req PageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.Title == "" {
-		http.Error(w, `{"error":"title is required"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "title is required", http.StatusBadRequest)
 		return
 	}
 
 	err := h.svc.CreatePage(pagePath, req.Title, req.Content)
 	if err == ErrExists {
-		http.Error(w, `{"error":"page already exists"}`, http.StatusConflict)
+		httputil.JSONError(w, "page already exists", http.StatusConflict)
 		return
 	}
 	if err == ErrInvalidPath {
-		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid path", http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -96,26 +97,26 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 
 	var req PageRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.Title == "" {
-		http.Error(w, `{"error":"title is required"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "title is required", http.StatusBadRequest)
 		return
 	}
 
 	err := h.svc.UpdatePage(pagePath, req.Title, req.Content, req.ShowDate, req.Published, req.CreatedAt)
 	if err == ErrNotFound {
-		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "page not found", http.StatusNotFound)
 		return
 	}
 	if err == ErrInvalidPath {
-		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid path", http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -130,30 +131,30 @@ func (h *Handler) RenamePage(w http.ResponseWriter, r *http.Request) {
 		NewPath string `json:"new_path"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.NewPath == "" {
-		http.Error(w, `{"error":"new_path is required"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "new_path is required", http.StatusBadRequest)
 		return
 	}
 
 	err := h.svc.RenamePage(oldPath, req.NewPath)
 	if err == ErrNotFound {
-		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "page not found", http.StatusNotFound)
 		return
 	}
 	if err == ErrExists {
-		http.Error(w, `{"error":"a page already exists at that path"}`, http.StatusConflict)
+		httputil.JSONError(w, "a page already exists at that path", http.StatusConflict)
 		return
 	}
 	if err == ErrInvalidPath {
-		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid path", http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -166,15 +167,15 @@ func (h *Handler) DeletePage(w http.ResponseWriter, r *http.Request) {
 
 	err := h.svc.DeletePage(pagePath)
 	if err == ErrNotFound {
-		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "page not found", http.StatusNotFound)
 		return
 	}
 	if err == ErrInvalidPath {
-		http.Error(w, `{"error":"invalid path"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid path", http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
@@ -186,11 +187,11 @@ func (h *Handler) IncrementView(w http.ResponseWriter, r *http.Request) {
 
 	count, err := h.svc.IncrementViewCount(pagePath)
 	if err == ErrNotFound {
-		http.Error(w, `{"error":"page not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "page not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 

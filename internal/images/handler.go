@@ -3,6 +3,8 @@ package images
 import (
 	"encoding/json"
 	"net/http"
+
+	"mees.space/internal/httputil"
 )
 
 const maxUploadSize = 10 << 20 // 10MB
@@ -19,24 +21,24 @@ func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
 	r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
 	if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-		http.Error(w, `{"error":"file too large (max 10MB)"}`, http.StatusRequestEntityTooLarge)
+		httputil.JSONError(w, "file too large (max 10MB)", http.StatusRequestEntityTooLarge)
 		return
 	}
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, `{"error":"missing file field"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "missing file field", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	info, err := h.svc.Upload(file, header)
 	if err == ErrInvalidType {
-		http.Error(w, `{"error":"invalid file type, only images allowed"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid file type, only images allowed", http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"failed to upload file"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "failed to upload file", http.StatusInternalServerError)
 		return
 	}
 
@@ -48,7 +50,7 @@ func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	images, err := h.svc.List()
 	if err != nil {
-		http.Error(w, `{"error":"failed to list images"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "failed to list images", http.StatusInternalServerError)
 		return
 	}
 
@@ -63,17 +65,17 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	filename := r.PathValue("filename")
 	if filename == "" {
-		http.Error(w, `{"error":"filename required"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "filename required", http.StatusBadRequest)
 		return
 	}
 
 	err := h.svc.Delete(filename)
 	if err == ErrNotFound {
-		http.Error(w, `{"error":"image not found"}`, http.StatusNotFound)
+		httputil.JSONError(w, "image not found", http.StatusNotFound)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"failed to delete image"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "failed to delete image", http.StatusInternalServerError)
 		return
 	}
 

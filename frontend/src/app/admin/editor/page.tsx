@@ -5,31 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { logout } from "@/lib/auth";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { Pencil, Trash2 } from "lucide-react";
-
-interface TreeNode {
-  name: string;
-  path: string;
-  title?: string;
-  is_dir: boolean;
-  children?: TreeNode[];
-}
-
-interface PageData {
-  path: string;
-  title: string;
-  content: string;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-  show_date: boolean;
-  published: boolean;
-}
-
-interface ImageInfo {
-  filename: string;
-  url: string;
-  size: number;
-}
+import { TreeNode, PageData, ImageInfo } from "@/lib/types";
 
 export default function EditorPage() {
   const [tree, setTree] = useState<TreeNode[]>([]);

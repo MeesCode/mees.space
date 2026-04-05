@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
+	"mees.space/internal/httputil"
 )
 
 type Handler struct {
@@ -29,12 +30,12 @@ type refreshRequest struct {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	if req.Username == "" || req.Password == "" {
-		http.Error(w, `{"error":"username and password required"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "username and password required", http.StatusBadRequest)
 		return
 	}
 
@@ -42,22 +43,22 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	var hash string
 	err := h.db.QueryRow("SELECT id, password_hash FROM users WHERE username = ?", req.Username).Scan(&id, &hash)
 	if err == sql.ErrNoRows {
-		http.Error(w, `{"error":"invalid credentials"}`, http.StatusUnauthorized)
+		httputil.JSONError(w, "invalid credentials", http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
-		http.Error(w, `{"error":"internal server error"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(req.Password)); err != nil {
-		http.Error(w, `{"error":"invalid credentials"}`, http.StatusUnauthorized)
+		httputil.JSONError(w, "invalid credentials", http.StatusUnauthorized)
 		return
 	}
 
 	pair, err := h.jwtSvc.GenerateTokenPair(id, req.Username)
 	if err != nil {
-		http.Error(w, `{"error":"failed to generate tokens"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "failed to generate tokens", http.StatusInternalServerError)
 		return
 	}
 
@@ -68,28 +69,33 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
 	var req refreshRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	claims, err := h.jwtSvc.ValidateRefreshToken(req.RefreshToken)
 	if err != nil {
-		http.Error(w, `{"error":"invalid or expired refresh token"}`, http.StatusUnauthorized)
+		httputil.JSONError(w, "invalid or expired refresh token", http.StatusUnauthorized)
 		return
 	}
 
-	userID := int(claims["user_id"].(float64))
+	userIDFloat, ok := claims["user_id"].(float64)
+	if !ok {
+		httputil.JSONError(w, "invalid token claims", http.StatusUnauthorized)
+		return
+	}
+	userID := int(userIDFloat)
 
 	var username string
 	err = h.db.QueryRow("SELECT username FROM users WHERE id = ?", userID).Scan(&username)
 	if err != nil {
-		http.Error(w, `{"error":"user not found"}`, http.StatusUnauthorized)
+		httputil.JSONError(w, "user not found", http.StatusUnauthorized)
 		return
 	}
 
 	pair, err := h.jwtSvc.GenerateTokenPair(userID, username)
 	if err != nil {
-		http.Error(w, `{"error":"failed to generate tokens"}`, http.StatusInternalServerError)
+		httputil.JSONError(w, "failed to generate tokens", http.StatusInternalServerError)
 		return
 	}
 

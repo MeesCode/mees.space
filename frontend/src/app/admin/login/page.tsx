@@ -59,7 +59,7 @@ export default function LoginPage() {
           gap: "16px",
         }}
       >
-        <h1 style={{ color: "var(--accent)", fontSize: "1.2rem", margin: 0 }}>
+        <h1 className="text-accent" style={{ fontSize: "1.2rem", margin: 0 }}>
           admin login
         </h1>
 
@@ -73,16 +73,8 @@ export default function LoginPage() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoComplete="username"
-          style={{
-            background: "var(--background)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "4px",
-            padding: "10px 14px",
-            color: "var(--color)",
-            fontFamily: "inherit",
-            fontSize: "0.9rem",
-            outline: "none",
-          }}
+          className="form-input"
+          style={{ padding: "10px 14px", fontSize: "0.9rem" }}
         />
 
         <input
@@ -91,33 +83,15 @@ export default function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           autoComplete="current-password"
-          style={{
-            background: "var(--background)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "4px",
-            padding: "10px 14px",
-            color: "var(--color)",
-            fontFamily: "inherit",
-            fontSize: "0.9rem",
-            outline: "none",
-          }}
+          className="form-input"
+          style={{ padding: "10px 14px", fontSize: "0.9rem" }}
         />
 
         <button
           type="submit"
           disabled={loading}
-          style={{
-            background: "var(--accent)",
-            border: "none",
-            borderRadius: "4px",
-            padding: "10px 14px",
-            color: "#000",
-            fontFamily: "inherit",
-            fontSize: "0.9rem",
-            fontWeight: "bold",
-            cursor: loading ? "wait" : "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
+          className="btn btn-primary"
+          style={{ padding: "10px 14px", fontSize: "0.9rem" }}
         >
           {loading ? "logging in..." : "log in"}
         </button>

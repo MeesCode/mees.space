@@ -2,16 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigation } from "@/lib/navigation";
-
-interface TreeNode {
-  name: string;
-  path: string;
-  title?: string;
-  is_dir: boolean;
-  children?: TreeNode[];
-  show_date?: boolean;
-  created_at?: string;
-}
+import { TreeNode } from "@/lib/types";
 
 function sortNodes(nodes: TreeNode[]): TreeNode[] {
   const files = nodes.filter((n) => !n.is_dir);

@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+
+	"mees.space/internal/httputil"
 )
 
 type Handler struct {
@@ -28,13 +30,31 @@ type SettingsRequest struct {
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	resp := SettingsResponse{}
+	settings := map[string]*string{
+		"ai_system_prompt": &resp.AISystemPrompt,
+		"ai_api_key":       &resp.AIAPIKey,
+		"ai_model":         &resp.AIModel,
+	}
 
-	h.db.QueryRow("SELECT value FROM settings WHERE key = 'ai_system_prompt'").Scan(&resp.AISystemPrompt)
-	h.db.QueryRow("SELECT value FROM settings WHERE key = 'ai_api_key'").Scan(&resp.AIAPIKey)
-	h.db.QueryRow("SELECT value FROM settings WHERE key = 'ai_model'").Scan(&resp.AIModel)
+	rows, err := h.db.Query("SELECT key, value FROM settings WHERE key IN ('ai_system_prompt', 'ai_api_key', 'ai_model')")
+	if err != nil {
+		httputil.JSONError(w, "failed to load settings", http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var key, value string
+		if err := rows.Scan(&key, &value); err != nil {
+			continue
+		}
+		if dest, ok := settings[key]; ok {
+			*dest = value
+		}
+	}
 
 	if resp.AIModel == "" {
-		resp.AIModel = "claude-sonnet-4-20250514"
+		resp.AIModel = "claude-sonnet-4-6-20250627"
 	}
 
 	// Mask the API key for security — only show last 8 chars
@@ -49,20 +69,37 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	var req SettingsRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, `{"error":"invalid request body"}`, http.StatusBadRequest)
+		httputil.JSONError(w, "invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	upsert := func(key, value string) error {
+		_, err := h.db.Exec(
+			"INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?",
+			key, value, value,
+		)
+		return err
+	}
+
 	if req.AISystemPrompt != nil {
-		h.db.Exec("INSERT INTO settings (key, value) VALUES ('ai_system_prompt', ?) ON CONFLICT(key) DO UPDATE SET value = ?", *req.AISystemPrompt, *req.AISystemPrompt)
+		if err := upsert("ai_system_prompt", *req.AISystemPrompt); err != nil {
+			httputil.JSONError(w, "failed to update settings", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if req.AIAPIKey != nil {
-		h.db.Exec("INSERT INTO settings (key, value) VALUES ('ai_api_key', ?) ON CONFLICT(key) DO UPDATE SET value = ?", *req.AIAPIKey, *req.AIAPIKey)
+		if err := upsert("ai_api_key", *req.AIAPIKey); err != nil {
+			httputil.JSONError(w, "failed to update settings", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if req.AIModel != nil {
-		h.db.Exec("INSERT INTO settings (key, value) VALUES ('ai_model', ?) ON CONFLICT(key) DO UPDATE SET value = ?", *req.AIModel, *req.AIModel)
+		if err := upsert("ai_model", *req.AIModel); err != nil {
+			httputil.JSONError(w, "failed to update settings", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

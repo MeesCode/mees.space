@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"mees.space/internal/httputil"
 )
 
 var (
@@ -26,13 +28,13 @@ func NewService(db *sql.DB, contentDir string) *Service {
 }
 
 func (s *Service) GetPage(pagePath string) (*PageResponse, error) {
-	clean, err := sanitizePath(pagePath)
+	clean, err := httputil.SanitizePath(pagePath)
 	if err != nil {
 		return nil, ErrInvalidPath
 	}
 
 	filePath := filepath.Join(s.contentDir, clean+".md")
-	if !s.isWithinContentDir(filePath) {
+	if !httputil.IsWithinDir(filePath, s.contentDir) {
 		return nil, ErrInvalidPath
 	}
 
@@ -77,13 +79,13 @@ func (s *Service) GetPage(pagePath string) (*PageResponse, error) {
 }
 
 func (s *Service) CreatePage(pagePath, title, content string) error {
-	clean, err := sanitizePath(pagePath)
+	clean, err := httputil.SanitizePath(pagePath)
 	if err != nil {
 		return ErrInvalidPath
 	}
 
 	filePath := filepath.Join(s.contentDir, clean+".md")
-	if !s.isWithinContentDir(filePath) {
+	if !httputil.IsWithinDir(filePath, s.contentDir) {
 		return ErrInvalidPath
 	}
 
@@ -114,13 +116,13 @@ func (s *Service) CreatePage(pagePath, title, content string) error {
 }
 
 func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, published *bool, createdAt *string) error {
-	clean, err := sanitizePath(pagePath)
+	clean, err := httputil.SanitizePath(pagePath)
 	if err != nil {
 		return ErrInvalidPath
 	}
 
 	filePath := filepath.Join(s.contentDir, clean+".md")
-	if !s.isWithinContentDir(filePath) {
+	if !httputil.IsWithinDir(filePath, s.contentDir) {
 		return ErrInvalidPath
 	}
 
@@ -183,11 +185,11 @@ func (s *Service) UpdatePage(pagePath, title, content string, showDate *bool, pu
 }
 
 func (s *Service) RenamePage(oldPath, newPath string) error {
-	cleanOld, err := sanitizePath(oldPath)
+	cleanOld, err := httputil.SanitizePath(oldPath)
 	if err != nil {
 		return ErrInvalidPath
 	}
-	cleanNew, err := sanitizePath(newPath)
+	cleanNew, err := httputil.SanitizePath(newPath)
 	if err != nil {
 		return ErrInvalidPath
 	}
@@ -197,7 +199,7 @@ func (s *Service) RenamePage(oldPath, newPath string) error {
 
 	oldFile := filepath.Join(s.contentDir, cleanOld+".md")
 	newFile := filepath.Join(s.contentDir, cleanNew+".md")
-	if !s.isWithinContentDir(oldFile) || !s.isWithinContentDir(newFile) {
+	if !httputil.IsWithinDir(oldFile, s.contentDir) || !httputil.IsWithinDir(newFile, s.contentDir) {
 		return ErrInvalidPath
 	}
 
@@ -230,13 +232,13 @@ func (s *Service) RenamePage(oldPath, newPath string) error {
 }
 
 func (s *Service) DeletePage(pagePath string) error {
-	clean, err := sanitizePath(pagePath)
+	clean, err := httputil.SanitizePath(pagePath)
 	if err != nil {
 		return ErrInvalidPath
 	}
 
 	filePath := filepath.Join(s.contentDir, clean+".md")
-	if !s.isWithinContentDir(filePath) {
+	if !httputil.IsWithinDir(filePath, s.contentDir) {
 		return ErrInvalidPath
 	}
 
@@ -248,12 +250,14 @@ func (s *Service) DeletePage(pagePath string) error {
 		return fmt.Errorf("remove file: %w", err)
 	}
 
-	s.db.Exec("DELETE FROM pages WHERE path = ?", clean)
+	if _, err := s.db.Exec("DELETE FROM pages WHERE path = ?", clean); err != nil {
+		return fmt.Errorf("delete page record: %w", err)
+	}
 	return nil
 }
 
 func (s *Service) IncrementViewCount(pagePath string) (int, error) {
-	clean, err := sanitizePath(pagePath)
+	clean, err := httputil.SanitizePath(pagePath)
 	if err != nil {
 		return 0, ErrInvalidPath
 	}
@@ -280,44 +284,3 @@ func (s *Service) IncrementViewCount(pagePath string) (int, error) {
 	return count, nil
 }
 
-func sanitizePath(raw string) (string, error) {
-	if raw == "" {
-		return "", ErrInvalidPath
-	}
-
-	// Reject paths that start with / or \ (absolute)
-	if strings.HasPrefix(raw, "/") || strings.HasPrefix(raw, "\\") {
-		return "", ErrInvalidPath
-	}
-
-	cleaned := filepath.ToSlash(filepath.Clean(raw))
-	cleaned = strings.TrimPrefix(cleaned, "/")
-
-	if cleaned == "" || cleaned == "." {
-		return "", ErrInvalidPath
-	}
-
-	if filepath.IsAbs(cleaned) || strings.Contains(cleaned, "..") {
-		return "", ErrInvalidPath
-	}
-
-	for _, r := range cleaned {
-		if r == 0 {
-			return "", ErrInvalidPath
-		}
-	}
-
-	return cleaned, nil
-}
-
-func (s *Service) isWithinContentDir(path string) bool {
-	absContent, err := filepath.Abs(s.contentDir)
-	if err != nil {
-		return false
-	}
-	absPath, err := filepath.Abs(path)
-	if err != nil {
-		return false
-	}
-	return strings.HasPrefix(absPath, absContent+string(filepath.Separator)) || strings.HasPrefix(absPath, absContent+"/")
-}

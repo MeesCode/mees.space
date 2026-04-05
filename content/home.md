@@ -4,7 +4,7 @@ I am a software developer based in the Netherlands. I love working with embedded
 
 I have a decent collection of musical instruments, most of which i don't know how to play. The exception being the trombone and bass guitar.
 
-# what i do
+# what i do joe
 
 - I've been at [Aquablu](https://www.aquablu.com/en/), Amsterdam since the very beginning in july 2020. Starting as a part-time full-stack developer, I moved into embedded development in 2021, went full-time in march 2022, and currently serve as system architect. Over the years I've been involved in many different aspects of the product design — from PCB design and embedded development to full-stack web development and system architecture — and have helped bring multiple products to market.
 - From 2017 until 2020 I've had a part-time job as a web developer at [HappyFlow](https://happyflow.io/), the Hague.

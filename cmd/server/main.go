@@ -1,11 +1,15 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 
@@ -108,6 +112,11 @@ func main() {
 	// Uploaded images (public)
 	mux.Handle("GET /uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir(cfg.UploadsDir))))
 
+	// Health check
+	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
 	// Admin redirect
 	mux.HandleFunc("GET /admin", func(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/admin/editor", http.StatusFound)
@@ -116,12 +125,31 @@ func main() {
 	// Catch-all: serve Next.js static export
 	mux.HandleFunc("GET /{path...}", staticHandler(cfg.DistDir))
 
-	handler := middleware.Logger(mux)
+	handler := middleware.SecurityHeaders(middleware.Logger(mux))
 
-	log.Printf("Starting server on :%s", cfg.Port)
-	if err := http.ListenAndServe(":"+cfg.Port, handler); err != nil {
-		log.Fatal(err)
+	srv := &http.Server{
+		Addr:    ":" + cfg.Port,
+		Handler: handler,
 	}
+
+	go func() {
+		log.Printf("Starting server on :%s", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	log.Println("Shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+	log.Println("Server stopped")
 }
 
 func staticHandler(distDir string) http.HandlerFunc {

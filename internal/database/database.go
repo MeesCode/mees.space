@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -25,6 +26,10 @@ func Open(dbPath string) (*sql.DB, error) {
 		db.Close()
 		return nil, fmt.Errorf("enable foreign keys: %w", err)
 	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(5)
+	db.SetConnMaxLifetime(5 * time.Minute)
 
 	return db, nil
 }
