@@ -112,7 +112,7 @@ export default function EditorPage() {
     const res = await apiFetch(`/api/pages/${selectedPath}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, content, show_date: showDate, published, created_at: createdAt }),
+      body: JSON.stringify({ title, content, show_date: showDate, published, created_at: createdAt, manual: true }),
     });
     setSaving(false);
     setMessage(res.ok ? "Saved" : "Save failed");
@@ -1012,7 +1012,7 @@ export default function EditorPage() {
                   fontSize: "0.85rem",
                 }}
               >
-                {saving ? "Saving..." : "Save"}
+                {saving ? "Saving & describing…" : "Save & regenerate description"}
               </button>
               <button
                 onClick={deletePage}
