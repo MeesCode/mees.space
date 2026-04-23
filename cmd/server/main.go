@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -87,6 +88,11 @@ func main() {
 	mux.Handle("GET /api/pages/{path...}", optionalAuth(pagesHandler.GetPage))
 	mux.HandleFunc("GET /feed.xml", pagesHandler.GetRSS)
 	mux.HandleFunc("GET /sitemap.xml", pagesHandler.GetSitemap)
+	mux.HandleFunc("GET /robots.txt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Cache-Control", "public, max-age=3600")
+		fmt.Fprintf(w, "User-agent: *\nDisallow: /admin/\nDisallow: /api/\nAllow: /\n\nSitemap: %s/sitemap.xml\n", cfg.BaseURL)
+	})
 
 	// View count (separate route since wildcard must be at end)
 	mux.HandleFunc("POST /api/views/{path...}", pagesHandler.IncrementView)
