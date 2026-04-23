@@ -91,3 +91,34 @@ func TestLoadInvalidIntFallsBackToDefault(t *testing.T) {
 		t.Errorf("JWTExpiryMinutes = %d, want default 60", cfg.JWTExpiryMinutes)
 	}
 }
+
+func TestLoadBaseURLDefault(t *testing.T) {
+	os.Setenv("MEES_JWT_SECRET", "test")
+	os.Unsetenv("MEES_BASE_URL")
+	defer os.Unsetenv("MEES_JWT_SECRET")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.BaseURL != "https://mees.space" {
+		t.Errorf("BaseURL = %q, want default %q", cfg.BaseURL, "https://mees.space")
+	}
+}
+
+func TestLoadBaseURLOverride(t *testing.T) {
+	os.Setenv("MEES_JWT_SECRET", "test")
+	os.Setenv("MEES_BASE_URL", "http://localhost:8080")
+	defer func() {
+		os.Unsetenv("MEES_JWT_SECRET")
+		os.Unsetenv("MEES_BASE_URL")
+	}()
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if cfg.BaseURL != "http://localhost:8080" {
+		t.Errorf("BaseURL = %q, want override", cfg.BaseURL)
+	}
+}

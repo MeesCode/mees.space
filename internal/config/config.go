@@ -12,6 +12,7 @@ type Config struct {
 	ContentDir          string
 	UploadsDir          string
 	DistDir             string
+	BaseURL             string
 	JWTSecret           string
 	JWTExpiryMinutes    int
 	JWTRefreshExpiryHrs int
@@ -25,6 +26,7 @@ func Load() (*Config, error) {
 		ContentDir:          envOr("MEES_CONTENT_DIR", "./content"),
 		UploadsDir:          envOr("MEES_UPLOADS_DIR", "./uploads"),
 		DistDir:             envOr("MEES_DIST_DIR", "./dist"),
+		BaseURL:             envOr("MEES_BASE_URL", "https://mees.space"),
 		JWTSecret:           os.Getenv("MEES_JWT_SECRET"),
 		JWTExpiryMinutes:    envOrInt("MEES_JWT_EXPIRY_MINUTES", 60),
 		JWTRefreshExpiryHrs: envOrInt("MEES_JWT_REFRESH_EXPIRY_HOURS", 168),
