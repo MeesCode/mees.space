@@ -13,7 +13,13 @@ interface Props {
 export function MarkdownRenderer({ content }: Props) {
   return (
     <div id="content">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeHighlight]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeRaw, rehypeHighlight]}
+        components={{
+          img: (props) => <img {...props} loading="lazy" decoding="async" />,
+        }}
+      >
         {content}
       </ReactMarkdown>
     </div>
