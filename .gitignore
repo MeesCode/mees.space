@@ -13,3 +13,4 @@ tmp/
 frontend/node_modules/
 frontend/.next/
 .env
+.worktrees/
