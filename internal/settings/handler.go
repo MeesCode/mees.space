@@ -54,7 +54,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if resp.AIModel == "" {
-		resp.AIModel = "claude-sonnet-4-6-20250627"
+		resp.AIModel = "claude-sonnet-4-6"
 	}
 
 	// Mask the API key for security — only show last 8 chars

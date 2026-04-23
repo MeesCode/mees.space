@@ -6,7 +6,7 @@ import { apiFetch } from "@/lib/api";
 export default function SettingsPage() {
   const [systemPrompt, setSystemPrompt] = useState("");
   const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("claude-sonnet-4-20250514");
+  const [model, setModel] = useState("claude-sonnet-4-6");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -15,7 +15,7 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((data) => {
         setSystemPrompt(data.ai_system_prompt || "");
-        setModel(data.ai_model || "claude-sonnet-4-20250514");
+        setModel(data.ai_model || "claude-sonnet-4-6");
         setApiKey("");
       });
   }, []);
@@ -147,9 +147,9 @@ export default function SettingsPage() {
             appearance: "auto" as const,
           }}
         >
-          <option value="claude-haiku-4-5-20251001">Claude 4.5 Haiku (fast, cheap)</option>
-          <option value="claude-sonnet-4-6-20250627">Claude 4.6 Sonnet (balanced)</option>
-          <option value="claude-opus-4-6-20250527">Claude 4.6 Opus (smartest)</option>
+          <option value="claude-haiku-4-5">Claude 4.5 Haiku (fast, cheap)</option>
+          <option value="claude-sonnet-4-6">Claude 4.6 Sonnet (balanced)</option>
+          <option value="claude-opus-4-7">Claude 4.7 Opus (smartest)</option>
         </select>
       </div>
 

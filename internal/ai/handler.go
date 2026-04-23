@@ -120,7 +120,7 @@ func (h *Handler) Complete(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if model == "" {
-		model = "claude-sonnet-4-6-20250627"
+		model = "claude-sonnet-4-6"
 	}
 
 	if apiKey == "" {

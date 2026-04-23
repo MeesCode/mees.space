@@ -47,8 +47,8 @@ func TestGetEmpty(t *testing.T) {
 	var resp SettingsResponse
 	json.NewDecoder(rr.Body).Decode(&resp)
 
-	if resp.AIModel != "claude-sonnet-4-6-20250627" {
-		t.Errorf("default model = %q, want claude-sonnet-4-6-20250627", resp.AIModel)
+	if resp.AIModel != "claude-sonnet-4-6" {
+		t.Errorf("default model = %q, want claude-sonnet-4-6", resp.AIModel)
 	}
 	if resp.AIAPIKey != "" {
 		t.Errorf("api key should be empty, got %q", resp.AIAPIKey)
@@ -62,7 +62,7 @@ func TestUpdateAndGet(t *testing.T) {
 	// Update settings
 	prompt := "You are a helpful assistant"
 	key := "sk-test-1234567890abcdef"
-	model := "claude-haiku-4-5-20251001"
+	model := "claude-haiku-4-5"
 	body, _ := json.Marshal(SettingsRequest{
 		AISystemPrompt: &prompt,
 		AIAPIKey:       &key,
@@ -105,7 +105,7 @@ func TestUpdatePartial(t *testing.T) {
 	h := NewHandler(db)
 
 	// Only update model
-	model := "claude-opus-4-6-20250527"
+	model := "claude-opus-4-7"
 	body, _ := json.Marshal(SettingsRequest{
 		AIModel: &model,
 	})

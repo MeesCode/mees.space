@@ -82,7 +82,7 @@ func contentSnippet(content string) string {
 	return cut
 }
 
-const descriptionModel = "claude-haiku-4-5-20251001"
+const descriptionModel = "claude-haiku-4-5"
 
 const descriptionSystemPrompt = "Write a meta description for a webpage. Output a single sentence, 130-160 characters, no quotes, no trailing punctuation other than a period. Describe what the reader will learn or get from the page, not meta-commentary about the page itself."
 
