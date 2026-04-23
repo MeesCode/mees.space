@@ -9,11 +9,12 @@ import (
 )
 
 type Handler struct {
-	svc *Service
+	svc     *Service
+	baseURL string
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, baseURL string) *Handler {
+	return &Handler{svc: svc, baseURL: baseURL}
 }
 
 func (h *Handler) GetTree(w http.ResponseWriter, r *http.Request) {
@@ -200,9 +201,7 @@ func (h *Handler) IncrementView(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) GetRSS(w http.ResponseWriter, r *http.Request) {
-	baseURL := "https://mees.space"
-
-	feed, err := BuildRSSFeed(h.svc.db, baseURL)
+	feed, err := BuildRSSFeed(h.svc.db, h.baseURL)
 	if err != nil {
 		http.Error(w, "failed to build feed", http.StatusInternalServerError)
 		return
