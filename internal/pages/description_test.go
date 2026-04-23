@@ -1,8 +1,11 @@
 package pages
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -155,5 +158,59 @@ func TestGeneratorCaps160(t *testing.T) {
 	got := gen.Generate(context.Background(), "Title", "Body.")
 	if len(got) > 160 {
 		t.Errorf("len(got) = %d, want ≤ 160", len(got))
+	}
+}
+
+func TestHandlerUpdatePageManualTriggersGeneration(t *testing.T) {
+	db, contentDir := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	svc := NewService(db, contentDir)
+	if err := svc.CreatePage("hello", "Hello", "# Hi\n\nOriginal body."); err != nil {
+		t.Fatalf("CreatePage: %v", err)
+	}
+
+	gen := &Generator{db: db, client: &stubClient{response: "Generated description."}, timeout: time.Second}
+	h := &Handler{svc: svc, baseURL: "https://example.com", descGen: gen}
+
+	trueVal := true
+	body, _ := json.Marshal(PageRequest{Title: "Hello", Content: "# Hi\n\nUpdated body.", Manual: &trueVal})
+	req := httptest.NewRequest("PUT", "/api/pages/hello", bytes.NewReader(body))
+	req.SetPathValue("path", "hello")
+	w := httptest.NewRecorder()
+	h.UpdatePage(w, req)
+
+	if w.Code != 200 {
+		t.Fatalf("status = %d, body = %s", w.Code, w.Body.String())
+	}
+	var desc string
+	db.QueryRow(`SELECT description FROM pages WHERE path = 'hello'`).Scan(&desc)
+	if desc != "Generated description." {
+		t.Errorf("description = %q, want %q", desc, "Generated description.")
+	}
+}
+
+func TestHandlerUpdatePageAutoSaveSkipsGeneration(t *testing.T) {
+	db, contentDir := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	svc := NewService(db, contentDir)
+	svc.CreatePage("hello", "Hello", "Body.")
+	// Prepopulate description
+	db.Exec(`UPDATE pages SET description = 'pre-existing' WHERE path = 'hello'`)
+
+	gen := &Generator{db: db, client: &stubClient{response: "SHOULD NOT APPEAR"}, timeout: time.Second}
+	h := &Handler{svc: svc, baseURL: "https://example.com", descGen: gen}
+
+	body, _ := json.Marshal(PageRequest{Title: "Hello", Content: "Updated body."}) // No Manual
+	req := httptest.NewRequest("PUT", "/api/pages/hello", bytes.NewReader(body))
+	req.SetPathValue("path", "hello")
+	w := httptest.NewRecorder()
+	h.UpdatePage(w, req)
+
+	var desc string
+	db.QueryRow(`SELECT description FROM pages WHERE path = 'hello'`).Scan(&desc)
+	if desc != "pre-existing" {
+		t.Errorf("description changed to %q, should have stayed 'pre-existing'", desc)
 	}
 }

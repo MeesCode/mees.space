@@ -55,7 +55,8 @@ func main() {
 	authHandler := auth.NewHandler(db, jwtSvc)
 
 	pagesSvc := pages.NewService(db, cfg.ContentDir)
-	pagesHandler := pages.NewHandler(pagesSvc, cfg.BaseURL)
+	descGen := pages.NewGenerator(db, 10*time.Second)
+	pagesHandler := pages.NewHandler(pagesSvc, cfg.BaseURL, descGen)
 
 	imagesSvc := images.NewService(cfg.UploadsDir)
 	imagesHandler := images.NewHandler(imagesSvc)

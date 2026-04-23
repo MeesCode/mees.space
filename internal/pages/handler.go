@@ -2,6 +2,7 @@ package pages
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"mees.space/internal/auth"
@@ -11,10 +12,11 @@ import (
 type Handler struct {
 	svc     *Service
 	baseURL string
+	descGen *Generator
 }
 
-func NewHandler(svc *Service, baseURL string) *Handler {
-	return &Handler{svc: svc, baseURL: baseURL}
+func NewHandler(svc *Service, baseURL string, descGen *Generator) *Handler {
+	return &Handler{svc: svc, baseURL: baseURL, descGen: descGen}
 }
 
 func (h *Handler) GetTree(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +121,14 @@ func (h *Handler) UpdatePage(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httputil.JSONError(w, "internal server error", http.StatusInternalServerError)
 		return
+	}
+
+	// On manual save, regenerate description (synchronous, best-effort).
+	if req.Manual != nil && *req.Manual && h.descGen != nil {
+		desc := h.descGen.Generate(r.Context(), req.Title, req.Content)
+		if _, dbErr := h.svc.db.Exec("UPDATE pages SET description = ? WHERE path = ?", desc, pagePath); dbErr != nil {
+			log.Printf("description: write failed for %s: %v", pagePath, dbErr)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
