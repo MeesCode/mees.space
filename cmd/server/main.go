@@ -22,6 +22,7 @@ import (
 	"mees.space/internal/images"
 	"mees.space/internal/middleware"
 	"mees.space/internal/pages"
+	"mees.space/internal/seo"
 	"mees.space/internal/settings"
 )
 
@@ -58,6 +59,11 @@ func main() {
 	pagesSvc := pages.NewService(db, cfg.ContentDir)
 	descGen := pages.NewGenerator(db, 10*time.Second)
 	pagesHandler := pages.NewHandler(pagesSvc, cfg.BaseURL, descGen)
+
+	injector, injErr := seo.NewInjector(cfg.DistDir)
+	if injErr != nil {
+		log.Fatal("seo injector:", injErr)
+	}
 
 	backfillCtx, backfillCancel := context.WithCancel(context.Background())
 	go descGen.BackfillEmpty(backfillCtx, pagesSvc)
@@ -134,7 +140,7 @@ func main() {
 	})
 
 	// Catch-all: serve Next.js static export
-	mux.HandleFunc("GET /{path...}", staticHandler(cfg.DistDir))
+	mux.HandleFunc("GET /{path...}", staticHandler(cfg.DistDir, cfg.BaseURL, pagesSvc, injector))
 
 	handler := middleware.SecurityHeaders(middleware.Logger(mux))
 
@@ -165,11 +171,12 @@ func main() {
 	log.Println("Server stopped")
 }
 
-func staticHandler(distDir string) http.HandlerFunc {
+func staticHandler(distDir, baseURL string, pagesSvc *pages.Service, injector *seo.Injector) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		urlPath := r.URL.Path
 		if urlPath == "/" {
-			urlPath = "/index.html"
+			serveContentPage(w, r, "", baseURL, pagesSvc, injector)
+			return
 		}
 
 		// Try exact file
@@ -186,22 +193,61 @@ func staticHandler(distDir string) http.HandlerFunc {
 			}
 		}
 
-		// Try index.html in subdirectory
+		// Try index.html in subdirectory (e.g., /admin/editor/)
 		indexPath := filepath.Join(distDir, filepath.FromSlash(urlPath), "index.html")
 		if serveIfExists(w, r, indexPath) {
 			return
 		}
 
-		// Serve catch-all SPA shell
-		spaPath := filepath.Join(distDir, "[[...slug]].html")
-		if serveIfExists(w, r, spaPath) {
+		// Admin paths fall back to raw shell (don't inject SEO)
+		if strings.HasPrefix(urlPath, "/admin") {
+			writeHTML(w, injector.Raw())
 			return
 		}
 
-		// Final fallback
-		fallback := filepath.Join(distDir, "index.html")
-		http.ServeFile(w, r, fallback)
+		// Content page fallback: strip leading slash and attempt lookup.
+		pagePath := strings.TrimPrefix(urlPath, "/")
+		serveContentPage(w, r, pagePath, baseURL, pagesSvc, injector)
 	}
+}
+
+func serveContentPage(w http.ResponseWriter, r *http.Request, pagePath, baseURL string, pagesSvc *pages.Service, injector *seo.Injector) {
+	if pagePath == "" {
+		pagePath = "home"
+	}
+
+	page, err := pagesSvc.GetPage(pagePath)
+	if err != nil {
+		// Not found or invalid — fall back to raw shell for client-side 404
+		writeHTML(w, injector.Raw())
+		return
+	}
+
+	canonical := baseURL + "/" + pagePath
+	if pagePath == "home" {
+		canonical = baseURL
+	}
+
+	meta := seo.PageMeta{
+		Title:        page.Title,
+		Description:  page.Description,
+		CanonicalURL: canonical,
+		OGImage:      baseURL + "/mees.png",
+		NoIndex:      !page.Published,
+	}
+
+	if !page.Published {
+		// Don't leak draft details to crawlers
+		meta.Title = "Draft — Mees Brinkhuis"
+		meta.Description = ""
+	}
+
+	writeHTML(w, injector.Inject(meta))
+}
+
+func writeHTML(w http.ResponseWriter, body []byte) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write(body)
 }
 
 func serveIfExists(w http.ResponseWriter, r *http.Request, path string) bool {
