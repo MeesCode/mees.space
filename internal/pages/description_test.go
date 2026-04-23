@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -273,5 +275,40 @@ func TestBackfillRespectsContext(t *testing.T) {
 
 	if elapsed > 100*time.Millisecond {
 		t.Errorf("backfill took %v, should have exited immediately on canceled ctx", elapsed)
+	}
+}
+
+func TestBackfillRecoverFromBrokenPage(t *testing.T) {
+	db, contentDir := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	svc := NewService(db, contentDir)
+	svc.CreatePage("p1", "P1", "Body.")
+	// Simulate a broken page: delete the underlying file so GetPage fails,
+	// but leave the DB row with empty description intact.
+	if err := os.Remove(filepath.Join(contentDir, "p1.md")); err != nil {
+		t.Fatalf("remove md file: %v", err)
+	}
+
+	gen := &Generator{db: db, client: &stubClient{response: "should not be used"}, timeout: time.Second}
+
+	// Give the loop enough room to process + pause. With one broken page and
+	// no subsequent empty rows, it should mark-and-continue, then exit on
+	// ErrNoRows. Bound total runtime.
+	done := make(chan struct{})
+	go func() {
+		gen.BackfillEmpty(context.Background(), svc)
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(2 * time.Second):
+		t.Fatal("BackfillEmpty did not return within 2s")
+	}
+
+	var desc string
+	db.QueryRow(`SELECT description FROM pages WHERE path = 'p1'`).Scan(&desc)
+	if desc != " " {
+		t.Errorf("description = %q, want %q (mark-with-space sentinel)", desc, " ")
 	}
 }

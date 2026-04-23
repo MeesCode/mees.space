@@ -234,9 +234,10 @@ func truncate(s string, max int) string {
 	return s[:max]
 }
 
-// BackfillEmpty fills empty descriptions one at a time. Intended to run once
-// on server startup in a background goroutine. Returns when no more empty
-// descriptions exist or ctx is canceled.
+// BackfillEmpty fills empty descriptions for published pages one at a time.
+// Drafts (published = 0) are skipped to avoid spending API tokens on
+// unpublished content. Intended to run once on server startup in a background
+// goroutine. Returns when no more empty descriptions exist or ctx is canceled.
 func (g *Generator) BackfillEmpty(ctx context.Context, svc *Service) {
 	const delay = 500 * time.Millisecond
 
@@ -264,12 +265,15 @@ func (g *Generator) BackfillEmpty(ctx context.Context, svc *Service) {
 		if err != nil {
 			log.Printf("backfill: load %s failed: %v", path, err)
 			// Mark with a space so we don't retry forever on a single broken page.
-			g.db.Exec(`UPDATE pages SET description = ' ' WHERE path = ?`, path)
+			if _, err := g.db.ExecContext(ctx, `UPDATE pages SET description = ' ' WHERE path = ?`, path); err != nil {
+				log.Printf("backfill: mark-broken write failed for %s: %v", path, err)
+				return
+			}
 			continue
 		}
 
 		desc := g.Generate(ctx, page.Title, page.Content)
-		if _, err := g.db.ExecContext(ctx, `UPDATE pages SET description = ? WHERE path = ?`, desc, path); err != nil {
+		if _, err := g.db.ExecContext(ctx, `UPDATE pages SET description = ? WHERE path = ? AND description = ''`, desc, path); err != nil {
 			log.Printf("backfill: write %s failed: %v", path, err)
 			return
 		}
