@@ -48,9 +48,9 @@ func (s *Service) GetPage(pagePath string) (*PageResponse, error) {
 
 	var resp PageResponse
 	err = s.db.QueryRow(
-		"SELECT path, title, view_count, created_at, updated_at, show_date, published FROM pages WHERE path = ?",
+		"SELECT path, title, description, view_count, created_at, updated_at, show_date, published FROM pages WHERE path = ?",
 		clean,
-	).Scan(&resp.Path, &resp.Title, &resp.ViewCount, &resp.CreatedAt, &resp.UpdatedAt, &resp.ShowDate, &resp.Published)
+	).Scan(&resp.Path, &resp.Title, &resp.Description, &resp.ViewCount, &resp.CreatedAt, &resp.UpdatedAt, &resp.ShowDate, &resp.Published)
 	if err == sql.ErrNoRows {
 		// Self-heal: file exists but DB row missing
 		title := filepath.Base(clean)

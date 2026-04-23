@@ -26,7 +26,8 @@ func setupTestDB(t *testing.T) (*sql.DB, string) {
 		created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		show_date BOOLEAN NOT NULL DEFAULT 0,
-		published BOOLEAN NOT NULL DEFAULT 1
+		published BOOLEAN NOT NULL DEFAULT 1,
+		description TEXT NOT NULL DEFAULT ''
 	)`)
 	db.Exec(`CREATE INDEX idx_pages_path ON pages(path)`)
 

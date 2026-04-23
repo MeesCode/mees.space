@@ -12,14 +12,15 @@ type TreeNode struct {
 }
 
 type PageResponse struct {
-	Path      string `json:"path"`
-	Title     string `json:"title"`
-	Content   string `json:"content"`
-	ViewCount int    `json:"view_count"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
-	ShowDate  bool   `json:"show_date"`
-	Published bool   `json:"published"`
+	Path        string `json:"path"`
+	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Description string `json:"description"`
+	ViewCount   int    `json:"view_count"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+	ShowDate    bool   `json:"show_date"`
+	Published   bool   `json:"published"`
 }
 
 type PageRequest struct {
@@ -28,4 +29,5 @@ type PageRequest struct {
 	ShowDate  *bool   `json:"show_date,omitempty"`
 	Published *bool   `json:"published,omitempty"`
 	CreatedAt *string `json:"created_at,omitempty"`
+	Manual    *bool   `json:"manual,omitempty"`
 }
