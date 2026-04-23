@@ -46,12 +46,14 @@ func contentSnippet(content string) string {
 				trimmed = trimmed[2:]
 			}
 		}
-		// Numbered list (1. etc.)
-		for len(trimmed) > 0 && trimmed[0] >= '0' && trimmed[0] <= '9' {
-			trimmed = trimmed[1:]
+		// Numbered list (1. / 1) followed by a space — only then treat as list marker
+		numIdx := 0
+		for numIdx < len(trimmed) && trimmed[numIdx] >= '0' && trimmed[numIdx] <= '9' {
+			numIdx++
 		}
-		trimmed = strings.TrimLeft(trimmed, ".)")
-		trimmed = strings.TrimLeft(trimmed, " ")
+		if numIdx > 0 && numIdx+1 < len(trimmed) && (trimmed[numIdx] == '.' || trimmed[numIdx] == ')') && trimmed[numIdx+1] == ' ' {
+			trimmed = trimmed[numIdx+2:]
+		}
 		lines[i] = trimmed
 	}
 	s = strings.Join(lines, " ")

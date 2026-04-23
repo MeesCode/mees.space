@@ -58,3 +58,31 @@ func TestContentSnippetEmptyInput(t *testing.T) {
 		t.Errorf("got %q, want empty", got)
 	}
 }
+
+func TestContentSnippetPreservesYearAtLineStart(t *testing.T) {
+	// Bug fix: previously, "2026 was a great year." had "2026 " stripped as a
+	// fake numbered-list marker. It should be preserved.
+	got := contentSnippet("2026 was a great year.")
+	if !strings.Contains(got, "2026") {
+		t.Errorf("got %q, should retain '2026'", got)
+	}
+}
+
+func TestContentSnippetStripsNumberedListMarkers(t *testing.T) {
+	got := contentSnippet("1. First item\n2. Second item")
+	if strings.Contains(got, "1.") || strings.Contains(got, "2.") {
+		t.Errorf("got %q, should strip list markers", got)
+	}
+	if !strings.Contains(got, "First item") || !strings.Contains(got, "Second item") {
+		t.Errorf("got %q, should retain list content", got)
+	}
+}
+
+func TestContentSnippetHardCutWhenNoSpaces(t *testing.T) {
+	// Exercises the fall-through branch when the 160-char window has no space.
+	long := strings.Repeat("a", 200)
+	got := contentSnippet(long)
+	if len(got) != 160 {
+		t.Errorf("len(got) = %d, want exactly 160 (hard cut)", len(got))
+	}
+}
