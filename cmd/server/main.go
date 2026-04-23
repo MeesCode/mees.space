@@ -205,6 +205,14 @@ func staticHandler(distDir, baseURL string, pagesSvc *pages.Service, injector *s
 			return
 		}
 
+		// Paths with a file extension (other than .html) that didn't match any
+		// static file are missing assets — return a proper 404 rather than
+		// serving the SPA shell as a soft 404.
+		if ext := filepath.Ext(urlPath); ext != "" && ext != ".html" {
+			http.NotFound(w, r)
+			return
+		}
+
 		// Content page fallback: strip leading slash and attempt lookup.
 		pagePath := strings.TrimPrefix(urlPath, "/")
 		serveContentPage(w, r, pagePath, baseURL, pagesSvc, injector)
