@@ -233,3 +233,51 @@ func truncate(s string, max int) string {
 	}
 	return s[:max]
 }
+
+// BackfillEmpty fills empty descriptions one at a time. Intended to run once
+// on server startup in a background goroutine. Returns when no more empty
+// descriptions exist or ctx is canceled.
+func (g *Generator) BackfillEmpty(ctx context.Context, svc *Service) {
+	const delay = 500 * time.Millisecond
+
+	for {
+		if ctx.Err() != nil {
+			return
+		}
+
+		var path string
+		err := g.db.QueryRowContext(ctx, `
+			SELECT path FROM pages
+			WHERE description = '' AND published = 1
+			ORDER BY updated_at DESC
+			LIMIT 1
+		`).Scan(&path)
+		if err == sql.ErrNoRows {
+			return
+		}
+		if err != nil {
+			log.Printf("backfill: query failed: %v", err)
+			return
+		}
+
+		page, err := svc.GetPage(path)
+		if err != nil {
+			log.Printf("backfill: load %s failed: %v", path, err)
+			// Mark with a space so we don't retry forever on a single broken page.
+			g.db.Exec(`UPDATE pages SET description = ' ' WHERE path = ?`, path)
+			continue
+		}
+
+		desc := g.Generate(ctx, page.Title, page.Content)
+		if _, err := g.db.ExecContext(ctx, `UPDATE pages SET description = ? WHERE path = ?`, desc, path); err != nil {
+			log.Printf("backfill: write %s failed: %v", path, err)
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(delay):
+		}
+	}
+}

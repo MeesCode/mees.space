@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http/httptest"
 	"strings"
 	"testing"
@@ -212,5 +213,65 @@ func TestHandlerUpdatePageAutoSaveSkipsGeneration(t *testing.T) {
 	db.QueryRow(`SELECT description FROM pages WHERE path = 'hello'`).Scan(&desc)
 	if desc != "pre-existing" {
 		t.Errorf("description changed to %q, should have stayed 'pre-existing'", desc)
+	}
+}
+
+func TestBackfillEmptyPopulatesDescriptions(t *testing.T) {
+	db, contentDir := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	svc := NewService(db, contentDir)
+	svc.CreatePage("p1", "P1", "Body one.")
+	svc.CreatePage("p2", "P2", "Body two.")
+	// Prepopulate one, leave the other empty
+	db.Exec(`UPDATE pages SET description = 'already set' WHERE path = 'p1'`)
+
+	gen := &Generator{
+		db:      db,
+		client:  &stubClient{response: "AI summary"},
+		timeout: time.Second,
+	}
+
+	// Only one page has empty description; backfill runs one iteration + one
+	// 500ms sleep at the end before the loop re-queries and exits via
+	// sql.ErrNoRows. Total runtime ~500ms.
+	gen.BackfillEmpty(context.Background(), svc)
+
+	var d1, d2 string
+	db.QueryRow(`SELECT description FROM pages WHERE path = 'p1'`).Scan(&d1)
+	db.QueryRow(`SELECT description FROM pages WHERE path = 'p2'`).Scan(&d2)
+
+	if d1 != "already set" {
+		t.Errorf("p1 description = %q, want unchanged", d1)
+	}
+	if d2 != "AI summary" {
+		t.Errorf("p2 description = %q, want generated", d2)
+	}
+}
+
+func TestBackfillRespectsContext(t *testing.T) {
+	db, contentDir := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	svc := NewService(db, contentDir)
+	for i := 0; i < 5; i++ {
+		svc.CreatePage(fmt.Sprintf("p%d", i), fmt.Sprintf("P%d", i), "Body.")
+	}
+
+	gen := &Generator{
+		db:      db,
+		client:  &stubClient{response: "summary"},
+		timeout: time.Second,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Pre-canceled
+
+	start := time.Now()
+	gen.BackfillEmpty(ctx, svc)
+	elapsed := time.Since(start)
+
+	if elapsed > 100*time.Millisecond {
+		t.Errorf("backfill took %v, should have exited immediately on canceled ctx", elapsed)
 	}
 }

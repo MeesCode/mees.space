@@ -58,6 +58,9 @@ func main() {
 	descGen := pages.NewGenerator(db, 10*time.Second)
 	pagesHandler := pages.NewHandler(pagesSvc, cfg.BaseURL, descGen)
 
+	backfillCtx, backfillCancel := context.WithCancel(context.Background())
+	go descGen.BackfillEmpty(backfillCtx, pagesSvc)
+
 	imagesSvc := images.NewService(cfg.UploadsDir)
 	imagesHandler := images.NewHandler(imagesSvc)
 
@@ -150,6 +153,7 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		log.Fatal("Server forced to shutdown:", err)
 	}
+	backfillCancel()
 	log.Println("Server stopped")
 }
 
