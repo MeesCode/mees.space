@@ -30,6 +30,10 @@ func setupTestDB(t *testing.T) (*sql.DB, string) {
 		description TEXT NOT NULL DEFAULT ''
 	)`)
 	db.Exec(`CREATE INDEX idx_pages_path ON pages(path)`)
+	db.Exec(`CREATE TABLE settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+)`)
 
 	contentDir := filepath.Join(tmpDir, "content")
 	os.MkdirAll(contentDir, 0755)

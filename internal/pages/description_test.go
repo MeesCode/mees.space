@@ -1,8 +1,11 @@
 package pages
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestContentSnippetPlainProse(t *testing.T) {
@@ -84,5 +87,73 @@ func TestContentSnippetHardCutWhenNoSpaces(t *testing.T) {
 	got := contentSnippet(long)
 	if len(got) != 160 {
 		t.Errorf("len(got) = %d, want exactly 160 (hard cut)", len(got))
+	}
+}
+
+type stubClient struct {
+	response string
+	err      error
+}
+
+func (s *stubClient) CreateMessage(ctx context.Context, apiKey string, req ClaudeRequest) (string, error) {
+	return s.response, s.err
+}
+
+func TestGeneratorUsesAIResult(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	gen := &Generator{db: db, client: &stubClient{response: "A thoughtful summary of the page in exactly one sentence."}, timeout: time.Second}
+	got := gen.Generate(context.Background(), "Title", "Body content.")
+	if got != "A thoughtful summary of the page in exactly one sentence." {
+		t.Errorf("got %q, want AI response", got)
+	}
+}
+
+func TestGeneratorFallsBackOnClientError(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	gen := &Generator{db: db, client: &stubClient{err: errors.New("api down")}, timeout: time.Second}
+	got := gen.Generate(context.Background(), "Title", "Body content here.")
+	if got == "" {
+		t.Fatal("expected non-empty fallback")
+	}
+	if got != "Body content here." {
+		t.Errorf("got %q, want fallback content snippet", got)
+	}
+}
+
+func TestGeneratorFallsBackWhenNoAPIKey(t *testing.T) {
+	db, _ := setupTestDB(t)
+	// No ai_api_key row inserted.
+
+	gen := &Generator{db: db, client: &stubClient{response: "should not be called"}, timeout: time.Second}
+	got := gen.Generate(context.Background(), "Title", "Body content here.")
+	if got != "Body content here." {
+		t.Errorf("got %q, want fallback", got)
+	}
+}
+
+func TestGeneratorTrimsQuotesAndWhitespace(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	gen := &Generator{db: db, client: &stubClient{response: `  "Hello world."  `}, timeout: time.Second}
+	got := gen.Generate(context.Background(), "Title", "Body.")
+	if got != "Hello world." {
+		t.Errorf("got %q, want trimmed", got)
+	}
+}
+
+func TestGeneratorCaps160(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+
+	long := strings.Repeat("word ", 60) // 300 chars
+	gen := &Generator{db: db, client: &stubClient{response: long}, timeout: time.Second}
+	got := gen.Generate(context.Background(), "Title", "Body.")
+	if len(got) > 160 {
+		t.Errorf("len(got) = %d, want ≤ 160", len(got))
 	}
 }

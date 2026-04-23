@@ -1,8 +1,17 @@
 package pages
 
 import (
+	"bytes"
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var (
@@ -71,4 +80,156 @@ func contentSnippet(content string) string {
 		return cut[:idx]
 	}
 	return cut
+}
+
+const descriptionModel = "claude-haiku-4-5-20251001"
+
+const descriptionSystemPrompt = "Write a meta description for a webpage. Output a single sentence, 130-160 characters, no quotes, no trailing punctuation other than a period. Describe what the reader will learn or get from the page, not meta-commentary about the page itself."
+
+// ClaudeRequest is the minimal subset of Anthropic's /v1/messages body we use.
+type ClaudeRequest struct {
+	Model       string      `json:"model"`
+	MaxTokens   int         `json:"max_tokens"`
+	System      string      `json:"system,omitempty"`
+	Messages    []ClaudeMsg `json:"messages"`
+	Temperature float64     `json:"temperature,omitempty"`
+}
+
+type ClaudeMsg struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+// ClaudeClient sends a message to the Anthropic API and returns the response text.
+type ClaudeClient interface {
+	CreateMessage(ctx context.Context, apiKey string, req ClaudeRequest) (string, error)
+}
+
+// httpClaudeClient is the production implementation.
+type httpClaudeClient struct {
+	http *http.Client
+}
+
+func (c *httpClaudeClient) CreateMessage(ctx context.Context, apiKey string, req ClaudeRequest) (string, error) {
+	body, err := json.Marshal(req)
+	if err != nil {
+		return "", err
+	}
+	hr, err := http.NewRequestWithContext(ctx, "POST", "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+	if err != nil {
+		return "", err
+	}
+	hr.Header.Set("Content-Type", "application/json")
+	hr.Header.Set("x-api-key", apiKey)
+	hr.Header.Set("anthropic-version", "2023-06-01")
+
+	resp, err := c.http.Do(hr)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("anthropic API %d: %s", resp.StatusCode, string(data))
+	}
+	var parsed struct {
+		Content []struct {
+			Type string `json:"type"`
+			Text string `json:"text"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal(data, &parsed); err != nil {
+		return "", err
+	}
+	for _, c := range parsed.Content {
+		if c.Type == "text" && c.Text != "" {
+			return c.Text, nil
+		}
+	}
+	return "", fmt.Errorf("no text content in response")
+}
+
+// Generator produces meta descriptions via Claude, with a content-derived fallback.
+type Generator struct {
+	db      *sql.DB
+	client  ClaudeClient
+	timeout time.Duration
+}
+
+// NewGenerator returns a Generator that uses the default HTTP Claude client.
+func NewGenerator(db *sql.DB, timeout time.Duration) *Generator {
+	return &Generator{
+		db:      db,
+		client:  &httpClaudeClient{http: &http.Client{Timeout: timeout}},
+		timeout: timeout,
+	}
+}
+
+// Generate returns a description for the given page content. Always non-empty:
+// AI result, or the content-derived fallback on any failure.
+func (g *Generator) Generate(ctx context.Context, title, content string) string {
+	apiKey := g.loadAPIKey()
+	if apiKey == "" {
+		return contentSnippet(content)
+	}
+
+	userMsg := "Title: " + title + "\n\nContent:\n" + truncate(content, 4000)
+	req := ClaudeRequest{
+		Model:       descriptionModel,
+		MaxTokens:   120,
+		Temperature: 0.3,
+		System:      descriptionSystemPrompt,
+		Messages:    []ClaudeMsg{{Role: "user", Content: userMsg}},
+	}
+
+	callCtx, cancel := context.WithTimeout(ctx, g.timeout)
+	defer cancel()
+
+	text, err := g.client.CreateMessage(callCtx, apiKey, req)
+	if err != nil {
+		log.Printf("description: AI generation failed: %v", err)
+		return contentSnippet(content)
+	}
+	return postprocess(text, content)
+}
+
+func (g *Generator) loadAPIKey() string {
+	var key string
+	row := g.db.QueryRow(`SELECT value FROM settings WHERE key = 'ai_api_key'`)
+	if err := row.Scan(&key); err != nil {
+		return ""
+	}
+	return key
+}
+
+func postprocess(text, content string) string {
+	s := strings.TrimSpace(text)
+	// Strip surrounding quotes (ASCII + curly)
+	for _, q := range []string{`"`, `'`, "“", "”", "‘", "’"} {
+		s = strings.TrimPrefix(s, q)
+		s = strings.TrimSuffix(s, q)
+	}
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return contentSnippet(content)
+	}
+	// Cap at 160 at word boundary
+	if len(s) <= 160 {
+		return s
+	}
+	cut := s[:160]
+	if idx := strings.LastIndex(cut, " "); idx > 0 {
+		return cut[:idx]
+	}
+	return cut
+}
+
+func truncate(s string, max int) string {
+	if len(s) <= max {
+		return s
+	}
+	return s[:max]
 }
