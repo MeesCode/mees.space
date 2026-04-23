@@ -30,14 +30,14 @@ export function Sidebar() {
           href="https://www.linkedin.com/in/mees-brinkhuis/"
           rel="noreferrer noopener"
         >
-          <img className="icon" src="/linkedin.svg" alt="linkedin" />
+          <img className="icon" src="/linkedin.svg" alt="linkedin" loading="lazy" />
         </a>
         <a
           target="_blank"
           href="https://github.com/MeesCode"
           rel="noreferrer noopener"
         >
-          <img className="icon" src="/github.svg" alt="github" />
+          <img className="icon" src="/github.svg" alt="github" loading="lazy" />
         </a>
       </div>
       <ContentTree />
