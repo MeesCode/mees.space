@@ -86,6 +86,7 @@ func main() {
 	mux.Handle("GET /api/pages/tree", optionalAuth(pagesHandler.GetTree))
 	mux.Handle("GET /api/pages/{path...}", optionalAuth(pagesHandler.GetPage))
 	mux.HandleFunc("GET /feed.xml", pagesHandler.GetRSS)
+	mux.HandleFunc("GET /sitemap.xml", pagesHandler.GetSitemap)
 
 	// View count (separate route since wildcard must be at end)
 	mux.HandleFunc("POST /api/views/{path...}", pagesHandler.IncrementView)

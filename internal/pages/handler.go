@@ -221,6 +221,18 @@ func (h *Handler) GetRSS(w http.ResponseWriter, r *http.Request) {
 	w.Write(feed)
 }
 
+func (h *Handler) GetSitemap(w http.ResponseWriter, r *http.Request) {
+	xml, err := BuildSitemap(h.svc.db, h.baseURL)
+	if err != nil {
+		http.Error(w, "failed to build sitemap", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.Header().Set("Cache-Control", "public, max-age=3600")
+	w.Write(xml)
+}
+
 func extractPath(r *http.Request) string {
 	return r.PathValue("path")
 }
