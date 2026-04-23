@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigation } from "@/lib/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { PageMeta } from "@/components/PageMeta";
 import { TerminalPrompt } from "@/components/TerminalPrompt";
 import { PageData } from "@/lib/types";
 
@@ -85,7 +86,10 @@ export function ContentPage() {
 
   return (
     <>
-      <MarkdownRenderer content={page.content} />
+      <PageMeta page={page} />
+      <div className={page.show_date ? "has-meta" : ""}>
+        <MarkdownRenderer content={page.content} />
+      </div>
       <TerminalPrompt path={page.path} />
     </>
   );

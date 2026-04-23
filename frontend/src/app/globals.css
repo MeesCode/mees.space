@@ -690,3 +690,24 @@ html {
 #content .heading-anchor:hover {
   color: var(--accent);
 }
+
+/* ——— Page Metadata Bar ——— */
+.page-meta {
+  max-width: 900px;
+  padding: 0 20px;
+  margin-top: 70px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+}
+
+.page-meta .sep {
+  margin: 0 8px;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+/* When the metadata bar is present, tighten the content's top padding
+   so the overall top margin stays consistent with the no-bar layout. */
+.has-meta #content {
+  padding-top: 24px;
+}
