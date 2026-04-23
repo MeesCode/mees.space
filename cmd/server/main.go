@@ -226,8 +226,17 @@ func serveContentPage(w http.ResponseWriter, r *http.Request, pagePath, baseURL 
 
 	page, err := pagesSvc.GetPage(pagePath)
 	if err != nil {
-		// Not found or invalid — fall back to raw shell for client-side 404
-		writeHTML(w, injector.Raw())
+		// Missing / invalid path — inject a generic no-index shell with HTTP 404
+		// so crawlers treat this as a proper 404. The client-side 404 UX in
+		// ContentPage.tsx still renders for human visitors.
+		meta := seo.PageMeta{
+			Title:       "Not Found — Mees Brinkhuis",
+			Description: "",
+			NoIndex:     true,
+		}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusNotFound)
+		w.Write(injector.Inject(meta))
 		return
 	}
 
