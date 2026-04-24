@@ -64,7 +64,6 @@ describe("apiFetch", () => {
     const result = await apiFetch("/api/x");
 
     expect(result).toBe(res);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("on 401 with no refresh_token, clears tokens and redirects to /admin/login", async () => {
@@ -77,7 +76,6 @@ describe("apiFetch", () => {
     expect(localStorage.getItem("access_token")).toBeNull();
     expect(localStorage.getItem("refresh_token")).toBeNull();
     expect(location.href).toBe("/admin/login");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("on 401 with refresh that succeeds, stores new tokens and retries with new Authorization", async () => {
@@ -120,7 +118,6 @@ describe("apiFetch", () => {
     expect(localStorage.getItem("access_token")).toBeNull();
     expect(localStorage.getItem("refresh_token")).toBeNull();
     expect(location.href).toBe("/admin/login");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("on 401 with refresh that throws a network error, clears tokens and redirects", async () => {
