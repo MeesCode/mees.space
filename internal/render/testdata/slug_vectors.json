@@ -1,0 +1,15 @@
+[
+  { "history": [],                           "input": "Hello World",           "want": "hello-world" },
+  { "history": [],                           "input": "Multiple  Spaces",      "want": "multiple--spaces" },
+  { "history": [],                           "input": "Trim Leading",          "want": "trim-leading" },
+  { "history": [],                           "input": "Keep_Underscores",      "want": "keep_underscores" },
+  { "history": [],                           "input": "Strip: Punct!",         "want": "strip-punct" },
+  { "history": [],                           "input": "Café Déjà Vu",          "want": "café-déjà-vu" },
+  { "history": [],                           "input": "1. Numbered",           "want": "1-numbered" },
+  { "history": [],                           "input": "Hyphen-Already",        "want": "hyphen-already" },
+  { "history": [],                           "input": "",                      "want": "" },
+  { "history": ["foo"],                      "input": "Foo",                   "want": "foo-1" },
+  { "history": ["foo", "foo-1"],             "input": "Foo",                   "want": "foo-2" },
+  { "history": ["foo", "foo-1", "foo-2"],    "input": "Foo",                   "want": "foo-3" },
+  { "history": [],                           "input": "   Leading Spaces",     "want": "---leading-spaces" }
+]
