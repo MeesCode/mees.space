@@ -53,6 +53,15 @@ func setupContentPageTest(t *testing.T) (*pages.Service, *seo.Injector, *render.
 		t.Fatal(err)
 	}
 
+	// Seed a draft page (published = 0) with unique sentinel strings so tests
+	// can verify they are NOT leaked into the served response.
+	if err := os.WriteFile(filepath.Join(contentDir, "draft-page.md"), []byte("# Secret Draft\n\nUnreleased body text."), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.Exec(`INSERT INTO pages (path, title, published) VALUES ('draft-page', 'Secret Draft', 0)`); err != nil {
+		t.Fatal(err)
+	}
+
 	distDir := filepath.Join(tmp, "dist")
 	if err := os.MkdirAll(distDir, 0755); err != nil {
 		t.Fatal(err)
@@ -82,9 +91,59 @@ func TestServeContentPageFound(t *testing.T) {
 		t.Errorf("status = %d, want 200", w.Code)
 	}
 	body := w.Body.String()
-	if !strings.Contains(body, "<title>Home Page</title>") {
-		t.Errorf("body missing page title; got:\n%s", body)
+
+	// Basic title injection.
+	mustContain(t, body, "<title>Home Page</title>")
+
+	// Heading with stable id from the goldmark renderer (content: "# Home").
+	mustContain(t, body, `id="home"`)
+	mustContain(t, body, `class="heading-anchor"`)
+	mustContain(t, body, `href="#home"`)
+	mustContain(t, body, `aria-hidden="true"`)
+	mustContain(t, body, `tabindex="-1"`)
+
+	// Bootstrap script injected by the seo.Injector.
+	mustContain(t, body, `<script id="__page_data__" type="application/json">`)
+	mustContain(t, body, `"rendered_html":`)
+
+	// Marker comments must be consumed (not left verbatim in output).
+	mustNotContain(t, body, "SSR_CONTENT")
+	mustNotContain(t, body, "SSR_DATA")
+}
+
+func TestServeContentPageDraft(t *testing.T) {
+	// GetPage does NOT filter by published; it returns all pages. The
+	// serveContentPage function detects page.Published == false and renders a
+	// safe shell: noindex meta, generic title "Draft — Mees Brinkhuis", and NO
+	// body HTML / bootstrap script so that draft details are not leaked.
+
+	svc, injector, renderer := setupContentPageTest(t)
+
+	w := httptest.NewRecorder()
+	r := httptest.NewRequest("GET", "/draft-page", nil)
+	serveContentPage(w, r, "draft-page", "https://example.com", svc, injector, renderer)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("status = %d, want 200 (draft pages are served, just without content)", w.Code)
 	}
+	body := w.Body.String()
+
+	// Must signal to crawlers that this page should not be indexed.
+	mustContain(t, body, `<meta name="robots" content="noindex">`)
+
+	// Must use the generic draft title, not the page's real title.
+	mustContain(t, body, "<title>Draft — Mees Brinkhuis</title>")
+
+	// Must NOT expose any draft-specific content.
+	mustNotContain(t, body, "Secret Draft")
+	mustNotContain(t, body, "Unreleased body text.")
+
+	// Must NOT inject the bootstrap script (would expose the draft payload).
+	mustNotContain(t, body, `<script id="__page_data__"`)
+
+	// Marker comments must be consumed.
+	mustNotContain(t, body, "SSR_CONTENT")
+	mustNotContain(t, body, "SSR_DATA")
 }
 
 func TestServeContentPageNotFound(t *testing.T) {
@@ -103,5 +162,21 @@ func TestServeContentPageNotFound(t *testing.T) {
 	}
 	if !strings.Contains(body, "Not Found — Mees Brinkhuis") {
 		t.Errorf("body missing generic Not Found title; got:\n%s", body)
+	}
+}
+
+// mustContain fails the test if body does not contain sub.
+func mustContain(t *testing.T, body, sub string) {
+	t.Helper()
+	if !strings.Contains(body, sub) {
+		t.Errorf("body missing %q; got:\n%s", sub, body)
+	}
+}
+
+// mustNotContain fails the test if body contains sub.
+func mustNotContain(t *testing.T, body, sub string) {
+	t.Helper()
+	if strings.Contains(body, sub) {
+		t.Errorf("body must not contain %q; got:\n%s", sub, body)
 	}
 }
