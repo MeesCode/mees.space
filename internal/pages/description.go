@@ -84,7 +84,7 @@ func contentSnippet(content string) string {
 
 const descriptionModel = "claude-haiku-4-5"
 
-const descriptionSystemPrompt = "Write a meta description for a webpage. Output a single sentence, 130-160 characters, no quotes, no trailing punctuation other than a period. Describe what the reader will learn or get from the page, not meta-commentary about the page itself."
+const DefaultDescriptionPrompt = "Write a meta description for a webpage. Output a single sentence, 130-160 characters, no quotes, no trailing punctuation other than a period. Describe what the reader will learn or get from the page, not meta-commentary about the page itself."
 
 // ClaudeRequest is the minimal subset of Anthropic's /v1/messages body we use.
 type ClaudeRequest struct {
@@ -181,7 +181,7 @@ func (g *Generator) Generate(ctx context.Context, title, content string) string 
 		Model:       descriptionModel,
 		MaxTokens:   120,
 		Temperature: 0.3,
-		System:      descriptionSystemPrompt,
+		System:      DefaultDescriptionPrompt,
 		Messages:    []ClaudeMsg{{Role: "user", Content: userMsg}},
 	}
 
