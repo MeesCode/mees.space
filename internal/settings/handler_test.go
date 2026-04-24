@@ -152,6 +152,25 @@ func TestUpdateInvalidBody(t *testing.T) {
 	}
 }
 
+func TestGetIncludesDescriptionPromptDefault(t *testing.T) {
+	db := setupTestDB(t)
+	h := NewHandler(db)
+
+	rr := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/settings", nil)
+	h.Get(rr, req)
+
+	var resp SettingsResponse
+	json.NewDecoder(rr.Body).Decode(&resp)
+
+	if resp.AIDescriptionPromptDefault == "" {
+		t.Error("AIDescriptionPromptDefault should always be populated, got empty string")
+	}
+	if !strings.Contains(resp.AIDescriptionPromptDefault, "meta description") {
+		t.Errorf("AIDescriptionPromptDefault = %q, expected to reference meta description", resp.AIDescriptionPromptDefault)
+	}
+}
+
 func TestAPIKeyMasking(t *testing.T) {
 	db := setupTestDB(t)
 	h := NewHandler(db)

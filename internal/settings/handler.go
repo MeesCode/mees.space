@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"mees.space/internal/httputil"
+	"mees.space/internal/pages"
 )
 
 type Handler struct {
@@ -60,6 +61,8 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	if resp.AIModel == "" {
 		resp.AIModel = "claude-sonnet-4-6"
 	}
+
+	resp.AIDescriptionPromptDefault = pages.DefaultDescriptionPrompt
 
 	// Mask the API key for security — only show last 8 chars
 	if len(resp.AIAPIKey) > 8 {
