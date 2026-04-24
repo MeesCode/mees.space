@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node scripts/verify-slug-parity.mjs",
     "build": "next build",
     "lint": "next lint"
   },
@@ -25,6 +26,7 @@
     "@types/node": "^22.15.18",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "github-slugger": "^2.0.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.1.7",
     "typescript": "^5.8.3"
