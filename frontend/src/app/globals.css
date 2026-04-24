@@ -55,7 +55,7 @@ body {
 
 #content {
   max-width: 900px;
-  padding: 70px 20px 0 20px;
+  padding: 70px 20px 0 48px;
   border-left: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -706,7 +706,7 @@ html {
 /* ——— Page Metadata Bar ——— */
 .page-meta {
   max-width: 900px;
-  padding: 0 20px;
+  padding: 0 20px 0 48px;
   margin-top: 70px;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.4);
