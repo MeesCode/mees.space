@@ -17,36 +17,76 @@ type PageMeta struct {
 	NoIndex      bool
 }
 
+// BodyInjection carries server-rendered content and a JSON bootstrap payload.
+// Either field may be nil/empty; in that case the corresponding marker in the
+// HTML shell is replaced with the empty string.
+type BodyInjection struct {
+	HTML []byte // rendered markdown, inserted into the SSR_CONTENT slot
+	Data []byte // JSON bytes; wrapped in a <script id="__page_data__"> tag
+}
+
+const (
+	markerContent = "<!--SSR_CONTENT-->"
+	markerData    = "<!--SSR_DATA-->"
+)
+
 // Injector holds the index.html template and produces customized HTML.
 type Injector struct {
 	template []byte
 }
 
-// NewInjector reads dist/index.html and verifies the </head> anchor exists.
-// Returns an error if the file is missing or the anchor can't be found.
+// NewInjector reads dist/index.html and verifies required anchors exist.
 func NewInjector(distDir string) (*Injector, error) {
 	path := filepath.Join(distDir, "index.html")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
-	if !bytes.Contains(data, []byte("</head>")) {
-		return nil, fmt.Errorf("%s: missing </head> anchor; cannot inject SEO metadata", path)
+	for _, anchor := range [...]string{"</head>", markerContent, markerData} {
+		if !bytes.Contains(data, []byte(anchor)) {
+			return nil, fmt.Errorf("%s: missing %q anchor; cannot inject", path, anchor)
+		}
 	}
 	return &Injector{template: data}, nil
 }
 
-// Inject returns a customized copy of the template with per-page <head> tags
-// inserted just before the first </head>. Safe for concurrent use.
-func (i *Injector) Inject(m PageMeta) []byte {
+// Inject returns a customized copy of the template with per-page <head>
+// tags inserted, rendered body HTML substituted for the content marker,
+// and a JSON bootstrap script substituted for the data marker. Safe for
+// concurrent use.
+func (i *Injector) Inject(m PageMeta, body BodyInjection) []byte {
+	out := make([]byte, len(i.template))
+	copy(out, i.template)
+
+	// Head fragment.
 	fragment := buildFragment(m)
-	replacement := append(fragment, []byte("</head>")...)
-	return bytes.Replace(i.template, []byte("</head>"), replacement, 1)
+	out = bytes.Replace(out, []byte("</head>"), append(fragment, []byte("</head>")...), 1)
+
+	// Content slot.
+	out = bytes.Replace(out, []byte(markerContent), body.HTML, 1)
+
+	// Data slot.
+	var dataReplacement []byte
+	if len(body.Data) > 0 {
+		var b bytes.Buffer
+		b.WriteString(`<script id="__page_data__" type="application/json">`)
+		b.Write(body.Data)
+		b.WriteString(`</script>`)
+		dataReplacement = b.Bytes()
+	}
+	out = bytes.Replace(out, []byte(markerData), dataReplacement, 1)
+
+	return out
 }
 
-// Raw returns the unmodified template.
+// Raw returns the template with both SSR markers stripped, for use on
+// admin routes that skip SEO injection.
 func (i *Injector) Raw() []byte {
-	return i.template
+	out := make([]byte, len(i.template))
+	copy(out, i.template)
+	out = bytes.Replace(out, []byte(markerContent), nil, 1)
+	out = bytes.Replace(out, []byte(markerData), nil, 1)
+	return out
 }
 
 func buildFragment(m PageMeta) []byte {
