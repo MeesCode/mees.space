@@ -12,10 +12,11 @@ import (
 	_ "modernc.org/sqlite"
 
 	"mees.space/internal/pages"
+	"mees.space/internal/render"
 	"mees.space/internal/seo"
 )
 
-func setupContentPageTest(t *testing.T) (*pages.Service, *seo.Injector) {
+func setupContentPageTest(t *testing.T) (*pages.Service, *seo.Injector, *render.Renderer) {
 	t.Helper()
 	tmp := t.TempDir()
 
@@ -56,7 +57,7 @@ func setupContentPageTest(t *testing.T) (*pages.Service, *seo.Injector) {
 	if err := os.MkdirAll(distDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	shell := "<!doctype html><html><head><title>Default</title></head><body></body></html>"
+	shell := "<!doctype html><html><head><title>Default</title></head><body><!--SSR_CONTENT--><!--SSR_DATA--></body></html>"
 	if err := os.WriteFile(filepath.Join(distDir, "index.html"), []byte(shell), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -66,15 +67,16 @@ func setupContentPageTest(t *testing.T) (*pages.Service, *seo.Injector) {
 		t.Fatal(err)
 	}
 	svc := pages.NewService(db, contentDir)
-	return svc, injector
+	renderer := render.New()
+	return svc, injector, renderer
 }
 
 func TestServeContentPageFound(t *testing.T) {
-	svc, injector := setupContentPageTest(t)
+	svc, injector, renderer := setupContentPageTest(t)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/home", nil)
-	serveContentPage(w, r, "home", "https://example.com", svc, injector)
+	serveContentPage(w, r, "home", "https://example.com", svc, injector, renderer)
 
 	if w.Code != http.StatusOK {
 		t.Errorf("status = %d, want 200", w.Code)
@@ -86,11 +88,11 @@ func TestServeContentPageFound(t *testing.T) {
 }
 
 func TestServeContentPageNotFound(t *testing.T) {
-	svc, injector := setupContentPageTest(t)
+	svc, injector, renderer := setupContentPageTest(t)
 
 	w := httptest.NewRecorder()
 	r := httptest.NewRequest("GET", "/does-not-exist", nil)
-	serveContentPage(w, r, "does-not-exist", "https://example.com", svc, injector)
+	serveContentPage(w, r, "does-not-exist", "https://example.com", svc, injector, renderer)
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("status = %d, want 404", w.Code)
