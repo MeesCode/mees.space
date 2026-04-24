@@ -88,20 +88,15 @@ func (r *headingAnchorRenderer) renderHeading(
 	n := node.(*ast.Heading)
 	if entering {
 		_, _ = fmt.Fprintf(w, "<h%d", n.Level)
-
-		// emit id attribute
-		if idVal, ok := n.AttributeString("id"); ok {
-			_, _ = fmt.Fprintf(w, ` id="%s"`, idVal)
-		}
-		_ = w.WriteByte('>')
-
-		// inject the anchor link with all required attributes
 		if idVal, ok := n.AttributeString("id"); ok {
 			slug := string(idVal.([]byte))
+			_, _ = fmt.Fprintf(w, ` id="%s">`, slug)
 			_, _ = fmt.Fprintf(w,
 				`<a href="#%s" class="heading-anchor" aria-hidden="true" tabindex="-1">#</a>`,
 				slug,
 			)
+		} else {
+			_ = w.WriteByte('>')
 		}
 	} else {
 		_, _ = fmt.Fprintf(w, "</h%d>\n", n.Level)

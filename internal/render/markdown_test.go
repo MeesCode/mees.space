@@ -61,3 +61,21 @@ func TestToHTMLRawHTMLPassthrough(t *testing.T) {
 		t.Errorf("expected raw HTML pass-through, got:\n%s", out)
 	}
 }
+
+func TestToHTMLInlineFormattingInHeading(t *testing.T) {
+	r := New()
+	out, err := r.ToHTML([]byte("## **bold** heading\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(out)
+	for _, want := range []string{
+		`id="bold-heading"`,
+		`href="#bold-heading"`,
+		`<strong>bold</strong>`,
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("output missing %q\n---\n%s\n---", want, s)
+		}
+	}
+}
