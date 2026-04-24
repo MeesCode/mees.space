@@ -280,6 +280,20 @@ func TestBackfillRespectsContext(t *testing.T) {
 	}
 }
 
+func TestGeneratorUsesCustomDescriptionPromptFromDB(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_description_prompt', 'Custom prompt here.')`)
+
+	stub := &stubClient{response: "A thoughtful summary of the page."}
+	gen := &Generator{db: db, client: stub, timeout: time.Second}
+	gen.Generate(context.Background(), "Title", "Body content.")
+
+	if stub.lastSystem != "Custom prompt here." {
+		t.Errorf("System = %q, want %q", stub.lastSystem, "Custom prompt here.")
+	}
+}
+
 func TestBackfillRecoverFromBrokenPage(t *testing.T) {
 	db, contentDir := setupTestDB(t)
 	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)

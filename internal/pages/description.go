@@ -177,11 +177,15 @@ func (g *Generator) Generate(ctx context.Context, title, content string) string 
 	}
 
 	userMsg := "Title: " + title + "\n\nContent:\n" + truncate(content, 4000)
+	system := g.loadDescriptionPrompt()
+	if system == "" {
+		system = DefaultDescriptionPrompt
+	}
 	req := ClaudeRequest{
 		Model:       descriptionModel,
 		MaxTokens:   120,
 		Temperature: 0.3,
-		System:      DefaultDescriptionPrompt,
+		System:      system,
 		Messages:    []ClaudeMsg{{Role: "user", Content: userMsg}},
 	}
 
@@ -203,6 +207,15 @@ func (g *Generator) loadAPIKey() string {
 		return ""
 	}
 	return key
+}
+
+func (g *Generator) loadDescriptionPrompt() string {
+	var prompt string
+	row := g.db.QueryRow(`SELECT value FROM settings WHERE key = 'ai_description_prompt'`)
+	if err := row.Scan(&prompt); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(prompt)
 }
 
 func postprocess(text, content string) string {
