@@ -3,6 +3,9 @@ import { isLoggedIn, logout } from "./auth";
 
 // Build an unsigned JWT whose payload has the given exp (seconds since epoch).
 // The signature segment is arbitrary — isLoggedIn only decodes the payload.
+// NOTE: uses standard base64 (btoa) rather than base64url. Works here because
+// JSON payloads with simple ASCII + integer exp contain no +/ characters.
+// Real backend-issued tokens use base64url; do not reuse these test tokens.
 function makeJwt(expSeconds: number): string {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = btoa(JSON.stringify({ exp: expSeconds }));

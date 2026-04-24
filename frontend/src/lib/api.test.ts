@@ -118,6 +118,7 @@ describe("apiFetch", () => {
     expect(localStorage.getItem("access_token")).toBeNull();
     expect(localStorage.getItem("refresh_token")).toBeNull();
     expect(location.href).toBe("/admin/login");
+    expect(fetchMock).toHaveBeenCalledTimes(2); // initial + refresh; no retry
   });
 
   it("on 401 with refresh that throws a network error, clears tokens and redirects", async () => {
