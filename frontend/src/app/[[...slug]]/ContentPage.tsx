@@ -1,24 +1,96 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigation } from "@/lib/navigation";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { PageMeta } from "@/components/PageMeta";
 import { TerminalPrompt } from "@/components/TerminalPrompt";
 import { PageData } from "@/lib/types";
 
+interface BootstrapPage extends PageData {
+  rendered_html?: string;
+}
+
+// Parsed bootstrap is cached at module load so StrictMode's double-invocation
+// of the useState initializer returns the same object both times.
+// `undefined` = not yet read; `null` = read, but missing or invalid.
+let bootstrapCache: BootstrapPage | null | undefined = undefined;
+
+function readBootstrap(): BootstrapPage | null {
+  if (bootstrapCache !== undefined) return bootstrapCache;
+  if (typeof document === "undefined") return null;
+  const el = document.getElementById("__page_data__");
+  if (!el || !el.textContent) {
+    bootstrapCache = null;
+    return null;
+  }
+  try {
+    bootstrapCache = JSON.parse(el.textContent) as BootstrapPage;
+    return bootstrapCache;
+  } catch (err) {
+    console.warn("failed to parse __page_data__", err);
+    bootstrapCache = null;
+    return null;
+  }
+}
+
+function applyScroll() {
+  if (typeof window === "undefined") return;
+  let hash = window.location.hash.slice(1);
+  if (hash) {
+    try {
+      hash = decodeURIComponent(hash);
+    } catch {
+      // malformed percent-encoding — use as-is; getElementById will likely miss
+    }
+    const target = document.getElementById(hash);
+    if (target) {
+      target.scrollIntoView();
+      return;
+    }
+  }
+  window.scrollTo(0, 0);
+}
+
 export function ContentPage() {
   const { path } = useNavigation();
-  const [page, setPage] = useState<PageData | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
   const pagePath = path === "/" ? "home" : path.replace(/^\//, "");
 
+  const [page, setPage] = useState<PageData | null>(() => {
+    const boot = readBootstrap();
+    if (boot && boot.path === pagePath) {
+      return boot;
+    }
+    return null;
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(page === null);
+  const ssrHTMLRef = useRef<string | null>(
+    (page as BootstrapPage | null)?.rendered_html ?? null
+  );
+  const usedSSR = ssrHTMLRef.current !== null;
+  const firstRunRef = useRef(true);
+
   useEffect(() => {
-    // Don't fetch for admin routes
     if (pagePath.startsWith("admin")) return;
 
+    // First render used the bootstrap — skip the initial fetch but still
+    // fire view count and run the scroll + highlight pass against the
+    // server-rendered DOM.
+    if (firstRunRef.current && usedSSR && page) {
+      firstRunRef.current = false;
+      applyScroll();
+      import("highlight.js").then(({ default: hljs }) => {
+        document
+          .querySelectorAll<HTMLElement>("#content pre code")
+          .forEach((el) => hljs.highlightElement(el));
+      });
+      fetch(`/api/views/${pagePath}`, { method: "POST" }).catch(() => {});
+      return;
+    }
+
+    firstRunRef.current = false;
+    ssrHTMLRef.current = null;
     setLoading(true);
     setError(null);
 
@@ -30,17 +102,14 @@ export function ContentPage() {
       .then((data) => {
         setPage(data);
         setLoading(false);
-        window.scrollTo(0, 0);
-
-        // Increment view count
-        fetch(`/api/views/${pagePath}`, { method: "POST" }).catch(
-          () => {}
-        );
+        applyScroll();
+        fetch(`/api/views/${pagePath}`, { method: "POST" }).catch(() => {});
       })
       .catch(() => {
         setError("Page not found");
         setLoading(false);
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagePath]);
 
   if (pagePath.startsWith("admin")) {
@@ -50,9 +119,11 @@ export function ContentPage() {
   if (loading) {
     return (
       <>
-        <article id="content">
-          <p style={{ opacity: 0.5 }}>Loading...</p>
-        </article>
+        <div
+          id="content"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: "<!--SSR_CONTENT-->" }}
+        />
         <TerminalPrompt path={pagePath} />
       </>
     );
@@ -88,7 +159,14 @@ export function ContentPage() {
     <>
       <PageMeta page={page} />
       <div className={page.show_date ? "has-meta" : ""}>
-        <MarkdownRenderer content={page.content} />
+        {usedSSR && ssrHTMLRef.current !== null ? (
+          <div
+            id="content"
+            dangerouslySetInnerHTML={{ __html: ssrHTMLRef.current }}
+          />
+        ) : (
+          <MarkdownRenderer content={page.content} />
+        )}
       </div>
       <TerminalPrompt path={page.path} />
     </>

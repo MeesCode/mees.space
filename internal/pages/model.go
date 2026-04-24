@@ -21,6 +21,10 @@ type PageResponse struct {
 	UpdatedAt   string `json:"updated_at"`
 	ShowDate    bool   `json:"show_date"`
 	Published   bool   `json:"published"`
+	// RenderedHTML is populated only in the SSR bootstrap payload (main.go),
+	// never by the /api/pages handler. Omitempty keeps API responses
+	// byte-identical to the pre-SSR shape.
+	RenderedHTML string `json:"rendered_html,omitempty"`
 }
 
 type PageRequest struct {

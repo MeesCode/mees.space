@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -22,6 +23,7 @@ import (
 	"mees.space/internal/images"
 	"mees.space/internal/middleware"
 	"mees.space/internal/pages"
+	"mees.space/internal/render"
 	"mees.space/internal/seo"
 	"mees.space/internal/settings"
 )
@@ -64,6 +66,8 @@ func main() {
 	if injErr != nil {
 		log.Fatal("seo injector:", injErr)
 	}
+
+	renderer := render.New()
 
 	backfillCtx, backfillCancel := context.WithCancel(context.Background())
 	go descGen.BackfillEmpty(backfillCtx, pagesSvc)
@@ -140,7 +144,7 @@ func main() {
 	})
 
 	// Catch-all: serve Next.js static export
-	mux.HandleFunc("GET /{path...}", staticHandler(cfg.DistDir, cfg.BaseURL, pagesSvc, injector))
+	mux.HandleFunc("GET /{path...}", staticHandler(cfg.DistDir, cfg.BaseURL, pagesSvc, injector, renderer))
 
 	handler := middleware.SecurityHeaders(middleware.Logger(mux))
 
@@ -171,11 +175,11 @@ func main() {
 	log.Println("Server stopped")
 }
 
-func staticHandler(distDir, baseURL string, pagesSvc *pages.Service, injector *seo.Injector) http.HandlerFunc {
+func staticHandler(distDir, baseURL string, pagesSvc *pages.Service, injector *seo.Injector, renderer *render.Renderer) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		urlPath := r.URL.Path
 		if urlPath == "/" {
-			serveContentPage(w, r, "", baseURL, pagesSvc, injector)
+			serveContentPage(w, r, "", baseURL, pagesSvc, injector, renderer)
 			return
 		}
 
@@ -215,20 +219,17 @@ func staticHandler(distDir, baseURL string, pagesSvc *pages.Service, injector *s
 
 		// Content page fallback: strip leading slash and attempt lookup.
 		pagePath := strings.TrimPrefix(urlPath, "/")
-		serveContentPage(w, r, pagePath, baseURL, pagesSvc, injector)
+		serveContentPage(w, r, pagePath, baseURL, pagesSvc, injector, renderer)
 	}
 }
 
-func serveContentPage(w http.ResponseWriter, r *http.Request, pagePath, baseURL string, pagesSvc *pages.Service, injector *seo.Injector) {
+func serveContentPage(w http.ResponseWriter, r *http.Request, pagePath, baseURL string, pagesSvc *pages.Service, injector *seo.Injector, renderer *render.Renderer) {
 	if pagePath == "" {
 		pagePath = "home"
 	}
 
 	page, err := pagesSvc.GetPage(pagePath)
 	if err != nil {
-		// Missing / invalid path — inject a generic no-index shell with HTTP 404
-		// so crawlers treat this as a proper 404. The client-side 404 UX in
-		// ContentPage.tsx still renders for human visitors.
 		meta := seo.PageMeta{
 			Title:       "Not Found — Mees Brinkhuis",
 			Description: "",
@@ -236,7 +237,7 @@ func serveContentPage(w http.ResponseWriter, r *http.Request, pagePath, baseURL 
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusNotFound)
-		w.Write(injector.Inject(meta))
+		w.Write(injector.Inject(meta, seo.BodyInjection{}))
 		return
 	}
 
@@ -253,13 +254,28 @@ func serveContentPage(w http.ResponseWriter, r *http.Request, pagePath, baseURL 
 		NoIndex:      !page.Published,
 	}
 
-	if !page.Published {
-		// Don't leak draft details to crawlers
+	body := seo.BodyInjection{}
+	if page.Published {
+		htmlBytes, renderErr := renderer.ToHTML([]byte(page.Content))
+		if renderErr != nil {
+			log.Printf("ssr: render %s: %v", pagePath, renderErr)
+		} else {
+			body.HTML = htmlBytes
+			bootstrap := *page
+			bootstrap.RenderedHTML = string(htmlBytes)
+			if jsonBytes, jsonErr := json.Marshal(bootstrap); jsonErr != nil {
+				log.Printf("ssr: marshal %s: %v", pagePath, jsonErr)
+			} else {
+				body.Data = jsonBytes
+			}
+		}
+	} else {
+		// Don't leak draft details to crawlers or in the bootstrap payload.
 		meta.Title = "Draft — Mees Brinkhuis"
 		meta.Description = ""
 	}
 
-	writeHTML(w, injector.Inject(meta))
+	writeHTML(w, injector.Inject(meta, body))
 }
 
 func writeHTML(w http.ResponseWriter, body []byte) {

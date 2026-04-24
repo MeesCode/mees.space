@@ -7,6 +7,14 @@ import (
 	"testing"
 )
 
+const shellWithMarkers = `<html>
+<head></head>
+<body>
+<div id="content"><!--SSR_CONTENT--></div>
+<!--SSR_DATA-->
+</body>
+</html>`
+
 func writeTestHTML(t *testing.T, body string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -31,8 +39,24 @@ func TestNewInjectorMissingHeadAnchor(t *testing.T) {
 	}
 }
 
+func TestNewInjectorMissingContentMarker(t *testing.T) {
+	dir := writeTestHTML(t, `<html><head></head><body><!--SSR_DATA--></body></html>`)
+	_, err := NewInjector(dir)
+	if err == nil {
+		t.Fatal("expected error when SSR_CONTENT marker is missing")
+	}
+}
+
+func TestNewInjectorMissingDataMarker(t *testing.T) {
+	dir := writeTestHTML(t, `<html><head></head><body><div id="content"><!--SSR_CONTENT--></div></body></html>`)
+	_, err := NewInjector(dir)
+	if err == nil {
+		t.Fatal("expected error when SSR_DATA marker is missing")
+	}
+}
+
 func TestInjectorInjectsAllTags(t *testing.T) {
-	dir := writeTestHTML(t, "<html><head><title>Default</title></head><body></body></html>")
+	dir := writeTestHTML(t, shellWithMarkers)
 	inj, err := NewInjector(dir)
 	if err != nil {
 		t.Fatal(err)
@@ -42,7 +66,7 @@ func TestInjectorInjectsAllTags(t *testing.T) {
 		Description:  "A great page.",
 		CanonicalURL: "https://example.com/my-page",
 		OGImage:      "https://example.com/img.png",
-	}))
+	}, BodyInjection{}))
 
 	expected := []string{
 		`<title>My Page</title>`,
@@ -66,28 +90,28 @@ func TestInjectorInjectsAllTags(t *testing.T) {
 }
 
 func TestInjectorNoIndex(t *testing.T) {
-	dir := writeTestHTML(t, "<html><head></head></html>")
+	dir := writeTestHTML(t, shellWithMarkers)
 	inj, _ := NewInjector(dir)
 
-	got := string(inj.Inject(PageMeta{Title: "T", NoIndex: true}))
+	got := string(inj.Inject(PageMeta{Title: "T", NoIndex: true}, BodyInjection{}))
 	if !strings.Contains(got, `<meta name="robots" content="noindex">`) {
 		t.Error("missing noindex meta")
 	}
 
-	got2 := string(inj.Inject(PageMeta{Title: "T", NoIndex: false}))
+	got2 := string(inj.Inject(PageMeta{Title: "T", NoIndex: false}, BodyInjection{}))
 	if strings.Contains(got2, "noindex") {
 		t.Error("should not include noindex when NoIndex is false")
 	}
 }
 
 func TestInjectorEscapesValues(t *testing.T) {
-	dir := writeTestHTML(t, "<html><head></head></html>")
+	dir := writeTestHTML(t, shellWithMarkers)
 	inj, _ := NewInjector(dir)
 
 	got := string(inj.Inject(PageMeta{
 		Title:       `Hello "<script>alert(1)</script>"`,
 		Description: `AT&T says "hi"`,
-	}))
+	}, BodyInjection{}))
 	if strings.Contains(got, "<script>alert") {
 		t.Error("unescaped script tag in output — XSS risk")
 	}
@@ -100,11 +124,55 @@ func TestInjectorEscapesValues(t *testing.T) {
 }
 
 func TestInjectorRaw(t *testing.T) {
-	body := "<html><head></head><body>hello</body></html>"
-	dir := writeTestHTML(t, body)
+	dir := writeTestHTML(t, shellWithMarkers)
 	inj, _ := NewInjector(dir)
 
-	if string(inj.Raw()) != body {
-		t.Error("Raw() should return the unmodified template")
+	expected := strings.ReplaceAll(strings.ReplaceAll(shellWithMarkers, "<!--SSR_CONTENT-->", ""), "<!--SSR_DATA-->", "")
+	got := string(inj.Raw())
+	if got != expected {
+		t.Errorf("Raw() should return shell with markers stripped\ngot:  %q\nwant: %q", got, expected)
+	}
+}
+
+func TestInjectorBodyHTMLAndData(t *testing.T) {
+	dir := writeTestHTML(t, shellWithMarkers)
+	inj, err := NewInjector(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(inj.Inject(PageMeta{Title: "T"}, BodyInjection{
+		HTML: []byte(`<h2 id="x">X</h2>`),
+		Data: []byte(`{"path":"home"}`),
+	}))
+
+	if !strings.Contains(got, `<div id="content"><h2 id="x">X</h2></div>`) {
+		t.Errorf("content not injected, got:\n%s", got)
+	}
+	if !strings.Contains(got, `<script id="__page_data__" type="application/json">{"path":"home"}</script>`) {
+		t.Errorf("data script not injected, got:\n%s", got)
+	}
+	if strings.Contains(got, "SSR_CONTENT") || strings.Contains(got, "SSR_DATA") {
+		t.Errorf("markers not stripped, got:\n%s", got)
+	}
+}
+
+func TestInjectorBodyEmptyStripsMarkers(t *testing.T) {
+	dir := writeTestHTML(t, shellWithMarkers)
+	inj, _ := NewInjector(dir)
+	got := string(inj.Inject(PageMeta{Title: "T"}, BodyInjection{}))
+	if strings.Contains(got, "SSR_CONTENT") || strings.Contains(got, "SSR_DATA") {
+		t.Errorf("markers should be stripped even with empty body, got:\n%s", got)
+	}
+	if strings.Contains(got, `<script id="__page_data__"`) {
+		t.Errorf("data script should not appear with empty Data, got:\n%s", got)
+	}
+}
+
+func TestInjectorRawStripsMarkers(t *testing.T) {
+	dir := writeTestHTML(t, shellWithMarkers)
+	inj, _ := NewInjector(dir)
+	got := string(inj.Raw())
+	if strings.Contains(got, "SSR_CONTENT") || strings.Contains(got, "SSR_DATA") {
+		t.Errorf("Raw() must strip markers, got:\n%s", got)
 	}
 }
