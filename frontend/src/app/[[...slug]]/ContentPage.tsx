@@ -11,18 +11,25 @@ interface BootstrapPage extends PageData {
   rendered_html?: string;
 }
 
-let bootstrapConsumed = false;
+// Parsed bootstrap is cached at module load so StrictMode's double-invocation
+// of the useState initializer returns the same object both times.
+// `undefined` = not yet read; `null` = read, but missing or invalid.
+let bootstrapCache: BootstrapPage | null | undefined = undefined;
 
 function readBootstrap(): BootstrapPage | null {
-  if (bootstrapConsumed) return null;
+  if (bootstrapCache !== undefined) return bootstrapCache;
   if (typeof document === "undefined") return null;
   const el = document.getElementById("__page_data__");
-  if (!el || !el.textContent) return null;
+  if (!el || !el.textContent) {
+    bootstrapCache = null;
+    return null;
+  }
   try {
-    const parsed = JSON.parse(el.textContent) as BootstrapPage;
-    return parsed;
+    bootstrapCache = JSON.parse(el.textContent) as BootstrapPage;
+    return bootstrapCache;
   } catch (err) {
     console.warn("failed to parse __page_data__", err);
+    bootstrapCache = null;
     return null;
   }
 }
@@ -47,7 +54,6 @@ export function ContentPage() {
   const [page, setPage] = useState<PageData | null>(() => {
     const boot = readBootstrap();
     if (boot && boot.path === pagePath) {
-      bootstrapConsumed = true;
       return boot;
     }
     return null;
@@ -110,6 +116,7 @@ export function ContentPage() {
       <>
         <div
           id="content"
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: "<!--SSR_CONTENT-->" }}
         />
         <TerminalPrompt path={pagePath} />
