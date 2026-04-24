@@ -666,6 +666,31 @@ html {
   color: var(--accent);
 }
 
+/* ——— Heading Anchor Links ——— */
+#content .heading-anchor {
+  color: rgba(255, 255, 255, 0.25);
+  text-decoration: none;
+  margin-right: 8px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  /* Reset the site-wide #content a gradient-underline rule */
+  background: none;
+  padding: 0;
+}
+
+#content h1:hover .heading-anchor,
+#content h2:hover .heading-anchor,
+#content h3:hover .heading-anchor,
+#content h4:hover .heading-anchor,
+#content h5:hover .heading-anchor,
+#content h6:hover .heading-anchor {
+  opacity: 1;
+}
+
+#content .heading-anchor:hover {
+  color: var(--accent);
+}
+
 /* ——— Page Metadata Bar ——— */
 .page-meta {
   max-width: 900px;
