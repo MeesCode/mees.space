@@ -61,12 +61,14 @@ func TestUpdateAndGet(t *testing.T) {
 
 	// Update settings
 	prompt := "You are a helpful assistant"
+	descPrompt := "Write a 100-char tagline."
 	key := "sk-test-1234567890abcdef"
 	model := "claude-haiku-4-5"
 	body, _ := json.Marshal(SettingsRequest{
-		AISystemPrompt: &prompt,
-		AIAPIKey:       &key,
-		AIModel:        &model,
+		AISystemPrompt:      &prompt,
+		AIDescriptionPrompt: &descPrompt,
+		AIAPIKey:            &key,
+		AIModel:             &model,
 	})
 
 	rr := httptest.NewRecorder()
@@ -87,6 +89,9 @@ func TestUpdateAndGet(t *testing.T) {
 
 	if resp.AISystemPrompt != prompt {
 		t.Errorf("system prompt = %q, want %q", resp.AISystemPrompt, prompt)
+	}
+	if resp.AIDescriptionPrompt != descPrompt {
+		t.Errorf("description prompt = %q, want %q", resp.AIDescriptionPrompt, descPrompt)
 	}
 	if resp.AIModel != model {
 		t.Errorf("model = %q, want %q", resp.AIModel, model)

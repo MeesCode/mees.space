@@ -17,26 +17,30 @@ func NewHandler(db *sql.DB) *Handler {
 }
 
 type SettingsResponse struct {
-	AISystemPrompt string `json:"ai_system_prompt"`
-	AIAPIKey       string `json:"ai_api_key"`
-	AIModel        string `json:"ai_model"`
+	AISystemPrompt             string `json:"ai_system_prompt"`
+	AIDescriptionPrompt        string `json:"ai_description_prompt"`
+	AIDescriptionPromptDefault string `json:"ai_description_prompt_default"`
+	AIAPIKey                   string `json:"ai_api_key"`
+	AIModel                    string `json:"ai_model"`
 }
 
 type SettingsRequest struct {
-	AISystemPrompt *string `json:"ai_system_prompt,omitempty"`
-	AIAPIKey       *string `json:"ai_api_key,omitempty"`
-	AIModel        *string `json:"ai_model,omitempty"`
+	AISystemPrompt      *string `json:"ai_system_prompt,omitempty"`
+	AIDescriptionPrompt *string `json:"ai_description_prompt,omitempty"`
+	AIAPIKey            *string `json:"ai_api_key,omitempty"`
+	AIModel             *string `json:"ai_model,omitempty"`
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	resp := SettingsResponse{}
 	settings := map[string]*string{
-		"ai_system_prompt": &resp.AISystemPrompt,
-		"ai_api_key":       &resp.AIAPIKey,
-		"ai_model":         &resp.AIModel,
+		"ai_system_prompt":      &resp.AISystemPrompt,
+		"ai_description_prompt": &resp.AIDescriptionPrompt,
+		"ai_api_key":            &resp.AIAPIKey,
+		"ai_model":              &resp.AIModel,
 	}
 
-	rows, err := h.db.Query("SELECT key, value FROM settings WHERE key IN ('ai_system_prompt', 'ai_api_key', 'ai_model')")
+	rows, err := h.db.Query("SELECT key, value FROM settings WHERE key IN ('ai_system_prompt', 'ai_description_prompt', 'ai_api_key', 'ai_model')")
 	if err != nil {
 		httputil.JSONError(w, "failed to load settings", http.StatusInternalServerError)
 		return
@@ -83,6 +87,13 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 
 	if req.AISystemPrompt != nil {
 		if err := upsert("ai_system_prompt", *req.AISystemPrompt); err != nil {
+			httputil.JSONError(w, "failed to update settings", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if req.AIDescriptionPrompt != nil {
+		if err := upsert("ai_description_prompt", *req.AIDescriptionPrompt); err != nil {
 			httputil.JSONError(w, "failed to update settings", http.StatusInternalServerError)
 			return
 		}
