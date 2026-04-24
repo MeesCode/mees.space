@@ -37,6 +37,12 @@ export default function RootLayout({
         <Providers>
           <ClientLayout>{children}</ClientLayout>
         </Providers>
+        <div
+          id="__ssr_data_slot__"
+          aria-hidden="true"
+          style={{ display: "none" }}
+          dangerouslySetInnerHTML={{ __html: "<!--SSR_DATA-->" }}
+        />
       </body>
     </html>
   );
