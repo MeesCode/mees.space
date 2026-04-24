@@ -5,6 +5,8 @@ import { apiFetch } from "@/lib/api";
 
 export default function SettingsPage() {
   const [systemPrompt, setSystemPrompt] = useState("");
+  const [descriptionPrompt, setDescriptionPrompt] = useState("");
+  const [descriptionPromptDefault, setDescriptionPromptDefault] = useState("");
   const [apiKey, setApiKey] = useState("");
   const [model, setModel] = useState("claude-sonnet-4-6");
   const [saving, setSaving] = useState(false);
@@ -15,6 +17,8 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((data) => {
         setSystemPrompt(data.ai_system_prompt || "");
+        setDescriptionPrompt(data.ai_description_prompt || "");
+        setDescriptionPromptDefault(data.ai_description_prompt_default || "");
         setModel(data.ai_model || "claude-sonnet-4-6");
         setApiKey("");
       });
@@ -22,7 +26,11 @@ export default function SettingsPage() {
 
   const save = async () => {
     setSaving(true);
-    const body: Record<string, string> = { ai_system_prompt: systemPrompt, ai_model: model };
+    const body: Record<string, string> = {
+      ai_system_prompt: systemPrompt,
+      ai_description_prompt: descriptionPrompt,
+      ai_model: model,
+    };
     if (apiKey) {
       body.ai_api_key = apiKey;
     }
@@ -115,6 +123,74 @@ export default function SettingsPage() {
         >
           This is prepended as a system message to every AI request from the
           editor.
+        </p>
+      </div>
+
+      <div style={{ marginBottom: "24px" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "8px",
+          }}
+        >
+          <label
+            style={{
+              color: "rgba(255,255,255,0.6)",
+              fontSize: "0.8rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+            }}
+          >
+            SEO Description Prompt
+          </label>
+          {descriptionPrompt && (
+            <button
+              type="button"
+              onClick={() => setDescriptionPrompt("")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "rgba(255,255,255,0.4)",
+                fontSize: "0.75rem",
+                fontFamily: "inherit",
+                cursor: "pointer",
+                padding: 0,
+                textDecoration: "underline",
+              }}
+            >
+              reset to default
+            </button>
+          )}
+        </div>
+        <textarea
+          value={descriptionPrompt}
+          onChange={(e) => setDescriptionPrompt(e.target.value)}
+          placeholder={descriptionPromptDefault}
+          rows={4}
+          style={{
+            width: "100%",
+            background: "var(--background)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            borderRadius: "4px",
+            padding: "10px",
+            color: "var(--color)",
+            fontFamily: "inherit",
+            fontSize: "0.85rem",
+            lineHeight: "1.6",
+            resize: "vertical",
+            outline: "none",
+          }}
+        />
+        <p
+          style={{
+            color: "rgba(255,255,255,0.3)",
+            fontSize: "0.75rem",
+            marginTop: "6px",
+          }}
+        >
+          Used when generating meta descriptions. Leave empty to use the default.
         </p>
       </div>
 
