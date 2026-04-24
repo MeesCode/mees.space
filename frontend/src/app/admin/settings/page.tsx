@@ -136,6 +136,7 @@ export default function SettingsPage() {
           }}
         >
           <label
+            htmlFor="description-prompt"
             style={{
               color: "rgba(255,255,255,0.6)",
               fontSize: "0.8rem",
@@ -149,6 +150,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={() => setDescriptionPrompt("")}
+              aria-label="Reset SEO description prompt to default"
               style={{
                 background: "none",
                 border: "none",
@@ -165,6 +167,7 @@ export default function SettingsPage() {
           )}
         </div>
         <textarea
+          id="description-prompt"
           value={descriptionPrompt}
           onChange={(e) => setDescriptionPrompt(e.target.value)}
           placeholder={descriptionPromptDefault}
