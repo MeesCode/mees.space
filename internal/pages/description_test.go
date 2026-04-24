@@ -328,3 +328,31 @@ func TestBackfillRecoverFromBrokenPage(t *testing.T) {
 		t.Errorf("description = %q, want %q (mark-with-space sentinel)", desc, " ")
 	}
 }
+
+func TestGeneratorUsesDefaultWhenDescriptionPromptUnset(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+	// ai_description_prompt not inserted.
+
+	stub := &stubClient{response: "ignored"}
+	gen := &Generator{db: db, client: stub, timeout: time.Second}
+	gen.Generate(context.Background(), "Title", "Body.")
+
+	if stub.lastSystem != DefaultDescriptionPrompt {
+		t.Errorf("System = %q, want DefaultDescriptionPrompt", stub.lastSystem)
+	}
+}
+
+func TestGeneratorUsesDefaultWhenDescriptionPromptEmpty(t *testing.T) {
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_description_prompt', '   ')`) // whitespace only
+
+	stub := &stubClient{response: "ignored"}
+	gen := &Generator{db: db, client: stub, timeout: time.Second}
+	gen.Generate(context.Background(), "Title", "Body.")
+
+	if stub.lastSystem != DefaultDescriptionPrompt {
+		t.Errorf("System = %q, want DefaultDescriptionPrompt (whitespace-only should fall back)", stub.lastSystem)
+	}
+}
