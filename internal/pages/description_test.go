@@ -97,11 +97,13 @@ func TestContentSnippetHardCutWhenNoSpaces(t *testing.T) {
 }
 
 type stubClient struct {
-	response string
-	err      error
+	response   string
+	err        error
+	lastSystem string // captured from most recent call
 }
 
 func (s *stubClient) CreateMessage(ctx context.Context, apiKey string, req ClaudeRequest) (string, error) {
+	s.lastSystem = req.System
 	return s.response, s.err
 }
 
