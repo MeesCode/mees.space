@@ -356,3 +356,19 @@ func TestGeneratorUsesDefaultWhenDescriptionPromptEmpty(t *testing.T) {
 		t.Errorf("System = %q, want DefaultDescriptionPrompt (whitespace-only should fall back)", stub.lastSystem)
 	}
 }
+
+func TestGeneratorUsesDefaultWhenDescriptionPromptLiteralEmpty(t *testing.T) {
+	// Covers the reset-to-default path: the UI writes "" (empty string) to
+	// the DB, which must fall back to the default at generation time.
+	db, _ := setupTestDB(t)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_api_key', 'test-key')`)
+	db.Exec(`INSERT INTO settings (key, value) VALUES ('ai_description_prompt', '')`)
+
+	stub := &stubClient{response: "ignored"}
+	gen := &Generator{db: db, client: stub, timeout: time.Second}
+	gen.Generate(context.Background(), "Title", "Body.")
+
+	if stub.lastSystem != DefaultDescriptionPrompt {
+		t.Errorf("System = %q, want DefaultDescriptionPrompt (literal empty string should fall back)", stub.lastSystem)
+	}
+}
