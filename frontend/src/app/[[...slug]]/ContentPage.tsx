@@ -36,8 +36,13 @@ function readBootstrap(): BootstrapPage | null {
 
 function applyScroll() {
   if (typeof window === "undefined") return;
-  const hash = window.location.hash.slice(1);
+  let hash = window.location.hash.slice(1);
   if (hash) {
+    try {
+      hash = decodeURIComponent(hash);
+    } catch {
+      // malformed percent-encoding — use as-is; getElementById will likely miss
+    }
     const target = document.getElementById(hash);
     if (target) {
       target.scrollIntoView();

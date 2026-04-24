@@ -23,13 +23,10 @@ func TestSlugifyVectors(t *testing.T) {
 	}
 	for _, v := range vectors {
 		seen := map[string]int{}
+		// Replay each history entry through Slugify so the seen map ends
+		// up in the exact state the real transformer would produce.
 		for _, h := range v.History {
-			// Prime the counter with the historical slug exactly as produced.
-			if _, ok := seen[h]; !ok {
-				seen[h] = 1
-			} else {
-				seen[h]++
-			}
+			_ = Slugify(h, seen)
 		}
 		got := Slugify(v.Input, seen)
 		if got != v.Want {
