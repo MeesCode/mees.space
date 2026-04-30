@@ -69,7 +69,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := h.svc.Delete(filename)
+	err := h.svc.Delete(filename, true, nil)
 	if err == ErrNotFound {
 		httputil.JSONError(w, "image not found", http.StatusNotFound)
 		return

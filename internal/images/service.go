@@ -19,7 +19,17 @@ var (
 	ErrInvalidType = errors.New("invalid file type")
 	ErrTooLarge    = errors.New("file too large")
 	ErrNotFound    = errors.New("image not found")
+	ErrInUse       = errors.New("image in use")
 )
+
+// InUseError reports that a delete was rejected because the image is still
+// referenced. It wraps ErrInUse and carries the affected page paths.
+type InUseError struct {
+	Pages []string
+}
+
+func (e *InUseError) Error() string { return ErrInUse.Error() }
+func (e *InUseError) Unwrap() error { return ErrInUse }
 
 var allowedMIME = map[string]bool{
 	"image/jpeg":    true,
@@ -125,7 +135,9 @@ func (s *Service) List(refs map[string][]string) ([]ImageInfo, error) {
 	return images, nil
 }
 
-func (s *Service) Delete(filename string) error {
+// Delete removes filename from the uploads directory. If pages is non-empty
+// and force is false, returns *InUseError without touching the file.
+func (s *Service) Delete(filename string, force bool, pages []string) error {
 	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
 		return ErrNotFound
 	}
@@ -135,6 +147,9 @@ func (s *Service) Delete(filename string) error {
 		return ErrNotFound
 	}
 
+	if !force && len(pages) > 0 {
+		return &InUseError{Pages: pages}
+	}
 	return os.Remove(path)
 }
 

@@ -1,6 +1,7 @@
 package images
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -166,5 +167,63 @@ func TestRefs_ReturnsEmptySliceForUnusedImage(t *testing.T) {
 	}
 	if len(got["1700000000_orphan.png"]) != 0 {
 		t.Errorf("want empty slice, got %v", got["1700000000_orphan.png"])
+	}
+}
+
+func TestDelete_RejectsWhenInUse(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	writeFile(t, content, "blog/post.md", "/uploads/1700000000_a.png")
+
+	svc := NewService(uploads)
+	refs, err := svc.Refs(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	delErr := svc.Delete("1700000000_a.png", false, refs["1700000000_a.png"])
+	if delErr == nil {
+		t.Fatal("want InUseError, got nil")
+	}
+	var inUse *InUseError
+	if !errors.As(delErr, &inUse) {
+		t.Fatalf("want *InUseError, got %T (%v)", delErr, delErr)
+	}
+	if !errors.Is(delErr, ErrInUse) {
+		t.Errorf("error must wrap ErrInUse: %v", delErr)
+	}
+	if len(inUse.Pages) != 1 || inUse.Pages[0] != "blog/post" {
+		t.Errorf("want pages [blog/post], got %v", inUse.Pages)
+	}
+	if _, statErr := os.Stat(filepath.Join(uploads, "1700000000_a.png")); statErr != nil {
+		t.Error("file must NOT be deleted on rejection")
+	}
+}
+
+func TestDelete_ForceRemovesEvenWhenInUse(t *testing.T) {
+	uploads := t.TempDir()
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+
+	svc := NewService(uploads)
+	if err := svc.Delete("1700000000_a.png", true, []string{"blog/post"}); err != nil {
+		t.Fatalf("force delete failed: %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(uploads, "1700000000_a.png")); !os.IsNotExist(statErr) {
+		t.Error("file should be deleted")
+	}
+}
+
+func TestDelete_NoRefsAlwaysRemoves(t *testing.T) {
+	uploads := t.TempDir()
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+
+	svc := NewService(uploads)
+	if err := svc.Delete("1700000000_a.png", false, nil); err != nil {
+		t.Fatalf("delete failed: %v", err)
+	}
+	if _, statErr := os.Stat(filepath.Join(uploads, "1700000000_a.png")); !os.IsNotExist(statErr) {
+		t.Error("file should be deleted")
 	}
 }
