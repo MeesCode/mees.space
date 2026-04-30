@@ -1,35 +1,68 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { logout } from "@/lib/auth";
-import { ImageInfo } from "@/lib/types";
+import { ImageInfo, ImageRefs } from "@/lib/types";
+
+type View = "all" | "unused";
+type Sort = "newest" | "name" | "size";
 
 export default function UploadsPage() {
   const [images, setImages] = useState<ImageInfo[]>([]);
+  const [view, setView] = useState<View>("all");
+  const [sort, setSort] = useState<Sort>("newest");
   const [selected, setSelected] = useState<string | null>(null);
+  const [refs, setRefs] = useState<string[] | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const res = await apiFetch("/api/images");
-      if (!res.ok) {
-        setLoaded(true);
-        return;
-      }
+      if (!res.ok) { setLoaded(true); return; }
       const data: ImageInfo[] = await res.json();
-      if (!cancelled) {
-        setImages(data);
-        setLoaded(true);
-      }
+      if (!cancelled) { setImages(data); setLoaded(true); }
     })();
     return () => { cancelled = true; };
   }, []);
 
+  // Load refs whenever the selected image changes.
+  useEffect(() => {
+    if (!selected) { setRefs(null); return; }
+    let cancelled = false;
+    (async () => {
+      const res = await apiFetch(`/api/images/${encodeURIComponent(selected)}/refs`);
+      if (!res.ok) { if (!cancelled) setRefs([]); return; }
+      const data: ImageRefs = await res.json();
+      if (!cancelled) setRefs(data.pages);
+    })();
+    return () => { cancelled = true; };
+  }, [selected]);
+
+  const visible = useMemo(() => {
+    let arr = view === "unused" ? images.filter((i) => i.ref_count === 0) : images.slice();
+    arr.sort((a, b) => {
+      if (sort === "name") return a.filename.localeCompare(b.filename);
+      if (sort === "size") return b.size - a.size;
+      // newest = uploaded_at desc
+      return b.uploaded_at.localeCompare(a.uploaded_at);
+    });
+    return arr;
+  }, [images, view, sort]);
+
   const totalBytes = images.reduce((n, im) => n + im.size, 0);
-  const unused = images.filter((im) => im.ref_count === 0);
-  const unusedBytes = unused.reduce((n, im) => n + im.size, 0);
+  const unusedCount = images.filter((im) => im.ref_count === 0).length;
+  const unusedBytes = images
+    .filter((im) => im.ref_count === 0)
+    .reduce((n, im) => n + im.size, 0);
+
+  const selectedInfo = images.find((im) => im.filename === selected) ?? null;
+
+  const copyUrl = async () => {
+    if (!selectedInfo) return;
+    await navigator.clipboard?.writeText(selectedInfo.url);
+  };
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--color)" }}>
@@ -47,17 +80,30 @@ export default function UploadsPage() {
             </button>
           </span>
         </div>
+
+        <div style={sectionLabel}>view</div>
+        <RailRow active={view === "all"} onClick={() => setView("all")} testid="filter-all">
+          ★ all images <span style={{ float: "right", color: "rgba(255,255,255,0.4)" }}>{images.length}</span>
+        </RailRow>
+        <RailRow active={view === "unused"} onClick={() => setView("unused")} testid="filter-unused">
+          unused only <span style={{ float: "right", color: "#ff6b6b" }}>{unusedCount}</span>
+        </RailRow>
+
+        <div style={sectionLabel}>sort</div>
+        <RailRow active={sort === "newest"} onClick={() => setSort("newest")} testid="sort-newest">↓ newest</RailRow>
+        <RailRow active={sort === "name"} onClick={() => setSort("name")} testid="sort-name">name</RailRow>
+        <RailRow active={sort === "size"} onClick={() => setSort("size")} testid="sort-size">size</RailRow>
       </div>
 
       {/* Grid + totals */}
       <div style={{ flex: 1, padding: 14, overflow: "auto" }}>
         <div data-testid="totals" style={totalsStyle}>
           {loaded
-            ? `${images.length} images · ${formatBytes(totalBytes)} total · ${unused.length} unused (${formatBytes(unusedBytes)})`
+            ? `${images.length} images · ${formatBytes(totalBytes)} total · ${unusedCount} unused (${formatBytes(unusedBytes)})`
             : "loading…"}
         </div>
         <div style={gridStyle}>
-          {images.map((im) => (
+          {visible.map((im) => (
             <div
               key={im.filename}
               onClick={() => setSelected(im.filename)}
@@ -92,10 +138,77 @@ export default function UploadsPage() {
         </div>
       </div>
 
-      {/* Detail rail (skeleton — populated by later tasks) */}
+      {/* Detail rail */}
       <div style={detailRailStyle}>
-        {selected ? <span style={{ fontSize: 12 }}>{selected}</span> : null}
+        {selectedInfo ? (
+          <>
+            <div style={sectionLabel}>selected</div>
+            <img
+              src={selectedInfo.url}
+              alt={selectedInfo.filename}
+              style={{ width: "100%", aspectRatio: "1", objectFit: "cover", background: "#1a1a1a", marginBottom: 10 }}
+            />
+            <div data-testid="detail-filename" style={{ fontSize: 11, wordBreak: "break-all", marginBottom: 4 }}>
+              {selectedInfo.filename}
+            </div>
+            <div data-testid="detail-size" style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", marginBottom: 14 }}>
+              {formatBytes(selectedInfo.size)} · {selectedInfo.uploaded_at.slice(0, 10)}
+            </div>
+
+            <div style={sectionLabel}>used in ({refs?.length ?? "…"})</div>
+            <div style={{ marginBottom: 18 }}>
+              {refs?.length === 0 && (
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>not referenced</div>
+              )}
+              {refs?.map((page) => (
+                <a
+                  key={page}
+                  href={`/admin/editor?path=${encodeURIComponent(page)}`}
+                  style={{ display: "block", color: "rgba(255,255,255,0.7)", textDecoration: "none", fontSize: 11, padding: "3px 0" }}
+                >
+                  → /{page}
+                </a>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: 6 }}>
+              <button data-testid="copy-url" onClick={copyUrl} style={{ ...primaryButton, flex: 1 }}>Copy URL</button>
+            </div>
+          </>
+        ) : (
+          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Select an image</div>
+        )}
       </div>
+    </div>
+  );
+}
+
+function RailRow({
+  active,
+  onClick,
+  testid,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  testid?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      data-testid={testid}
+      onClick={onClick}
+      style={{
+        cursor: "pointer",
+        padding: "3px 8px",
+        borderRadius: 3,
+        marginBottom: 3,
+        background: active ? "rgba(51,172,183,0.1)" : "transparent",
+        color: active ? "var(--accent)" : "rgba(255,255,255,0.7)",
+        fontSize: 12,
+      }}
+    >
+      {children}
     </div>
   );
 }
@@ -104,29 +217,17 @@ function refLabel(count: number): string {
   if (count < 0) return "?";
   return String(count);
 }
-
 function refTitle(count: number): string {
   if (count < 0) return "Couldn't compute references";
   if (count === 0) return "Not referenced anywhere";
   return `Used in ${count} page${count === 1 ? "" : "s"}`;
 }
-
 function badgeStyle(count: number): React.CSSProperties {
   let bg = "var(--accent)";
   if (count === 0) bg = "#ff6b6b";
   if (count < 0) bg = "rgba(255,255,255,0.3)";
-  return {
-    position: "absolute",
-    top: 4,
-    right: 4,
-    background: bg,
-    color: "#000",
-    fontSize: 10,
-    padding: "1px 5px",
-    borderRadius: 2,
-  };
+  return { position: "absolute", top: 4, right: 4, background: bg, color: "#000", fontSize: 10, padding: "1px 5px", borderRadius: 2 };
 }
-
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
@@ -140,33 +241,35 @@ const leftRailStyle: React.CSSProperties = {
   flexShrink: 0,
   overflow: "auto",
 };
-
 const headerStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   marginBottom: 16,
 };
-
 const navLinkStyle: React.CSSProperties = {
   color: "rgba(255,255,255,0.4)",
   textDecoration: "none",
   fontFamily: "inherit",
   fontSize: "0.75rem",
 };
-
+const sectionLabel: React.CSSProperties = {
+  fontSize: 10,
+  color: "rgba(255,255,255,0.45)",
+  textTransform: "uppercase",
+  letterSpacing: "0.05em",
+  margin: "14px 0 6px",
+};
 const totalsStyle: React.CSSProperties = {
   fontSize: 11,
   color: "rgba(255,255,255,0.5)",
   marginBottom: 10,
 };
-
 const gridStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))",
   gap: 8,
 };
-
 const filenameStyle: React.CSSProperties = {
   fontSize: 10,
   color: "rgba(255,255,255,0.45)",
@@ -175,10 +278,20 @@ const filenameStyle: React.CSSProperties = {
   overflow: "hidden",
   textOverflow: "ellipsis",
 };
-
 const detailRailStyle: React.CSSProperties = {
   width: 230,
   borderLeft: "1px solid rgba(255,255,255,0.08)",
   padding: 14,
   flexShrink: 0,
+  overflow: "auto",
+};
+const primaryButton: React.CSSProperties = {
+  background: "var(--accent)",
+  border: "none",
+  borderRadius: 4,
+  padding: "6px 10px",
+  color: "#000",
+  cursor: "pointer",
+  fontSize: 11,
+  fontWeight: "bold",
 };
