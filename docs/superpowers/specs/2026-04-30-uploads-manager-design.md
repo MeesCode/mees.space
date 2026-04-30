@@ -81,13 +81,13 @@ type ImageInfo struct {
 
 `UploadedAt` is parsed from the filename's `<unix-ts>_` prefix when present, falling back to the file's `mtime` for any pre-existing files without that prefix.
 
-`Service.List` is extended to take an optional refs map (or to compute one via `Refs`) and populate `RefCount` on each item. The handler decides whether to attach refs or not.
+`Service.List(refs map[string][]string) ([]ImageInfo, error)` takes a refs map (the caller computes it via `Refs`) and populates `RefCount` on each item. Pass `nil` to leave `RefCount` zero — the upload handler does this on `POST /api/images` to avoid scanning the entire content tree on every upload.
 
 ## Backend — Handlers and Routes
 
 | Method | Path | Behavior |
 |--------|------|----------|
-| `GET` | `/api/images` | One refs scan; returns `ImageInfo[]` with `ref_count` populated. If the refs scan returns a partial error, items still render but with `ref_count: -1` to signal "unknown" to the client |
+| `GET` | `/api/images` | One refs scan; returns `ImageInfo[]` with `ref_count` populated. If `Refs` returns an error (an unreadable `.md` file makes the count untrustworthy for any image), every item's `ref_count` is set to `-1` to signal "unknown" to the client and the response is still 200 |
 | `GET` | `/api/images/{filename}/refs` | Returns `{ "filename": "...", "pages": ["blog/post-1", "about"] }`. 404 if the image does not exist |
 | `POST` | `/api/images` | Unchanged — single-file upload, response unchanged plus the new `RefCount: 0` and `UploadedAt` fields |
 | `DELETE` | `/api/images/{filename}` | If the image is referenced and `force=1` is not in the query, returns 409 with body `{ "error": "in use", "pages": [...] }`. Otherwise 204 |
@@ -137,7 +137,7 @@ New route at `frontend/src/app/admin/uploads/page.tsx`. Layout:
 - Sort:
   - **newest** (default) — by `uploaded_at` desc.
   - **name** — alphabetical asc.
-  - **size** — bytes desc.
+  - **size** — largest first.
 - Drop zone at the bottom — accepts dragged files and click-to-open file picker.
 
 ### Grid
@@ -190,7 +190,7 @@ export interface ImageRefs {
 
 ## Error Handling
 
-- **Refs scan partial failure**: `GET /api/images` still returns 200; affected items have `ref_count: -1`. The grid renders these with a `?` badge and a tooltip "Couldn't compute references for this image"; Delete on these falls back to the always-show-confirm path.
+- **Refs scan failure**: `GET /api/images` still returns 200; every item's `ref_count` is `-1`. The grid renders the badge as `?` with tooltip "Couldn't compute references"; Delete on these falls back to the always-show-confirm path (which calls `GET /api/images/{filename}/refs` to populate the modal — that endpoint surfaces its own error if the scan still fails).
 - **Delete while referenced** without `force`: 409 with the page list — drives the confirm modal.
 - **Delete a non-existent image** (race): 404 — the grid removes the entry and shows a toast.
 - **Upload validation**: existing 413 / 400 unchanged.
