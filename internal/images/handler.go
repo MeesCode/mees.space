@@ -2,6 +2,7 @@ package images
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -112,10 +113,31 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		httputil.JSONError(w, "filename required", http.StatusBadRequest)
 		return
 	}
+	force := r.URL.Query().Get("force") == "1"
 
-	err := h.svc.Delete(filename, true, nil)
+	var pages []string
+	if !force {
+		refs, refsErr := h.svc.Refs(h.contentDir)
+		if refsErr != nil {
+			httputil.JSONError(w, "failed to scan references", http.StatusInternalServerError)
+			return
+		}
+		pages = refs[filename]
+	}
+
+	err := h.svc.Delete(filename, force, pages)
 	if err == ErrNotFound {
 		httputil.JSONError(w, "image not found", http.StatusNotFound)
+		return
+	}
+	var inUse *InUseError
+	if errors.As(err, &inUse) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]any{
+			"error": "in use",
+			"pages": inUse.Pages,
+		})
 		return
 	}
 	if err != nil {

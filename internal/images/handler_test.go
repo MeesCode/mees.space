@@ -108,7 +108,7 @@ func TestListImages(t *testing.T) {
 func TestDeleteImage(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc, "")
+	h := NewHandler(svc, t.TempDir())
 
 	os.WriteFile(filepath.Join(uploadsDir, "test.png"), []byte("fake"), 0644)
 
@@ -130,7 +130,7 @@ func TestDeleteImage(t *testing.T) {
 func TestDeleteImage_NotFound(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc, "")
+	h := NewHandler(svc, t.TempDir())
 
 	req := httptest.NewRequest("DELETE", "/api/images/nonexistent.png", nil)
 	req.SetPathValue("filename", "nonexistent.png")
@@ -195,6 +195,69 @@ func TestGetRefs_NotFound(t *testing.T) {
 
 	if rr.Code != http.StatusNotFound {
 		t.Fatalf("want 404, got %d", rr.Code)
+	}
+}
+
+func TestDeleteImage_409WhenInUse(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	os.MkdirAll(filepath.Join(content, "blog"), 0755)
+	os.WriteFile(filepath.Join(content, "blog", "post.md"),
+		[]byte("/uploads/1700000000_a.png"), 0644)
+
+	svc := NewService(uploads)
+	h := NewHandler(svc, content)
+
+	req := httptest.NewRequest("DELETE", "/api/images/1700000000_a.png", nil)
+	req.SetPathValue("filename", "1700000000_a.png")
+	rr := httptest.NewRecorder()
+	h.Delete(rr, req)
+
+	if rr.Code != http.StatusConflict {
+		t.Fatalf("want 409, got %d", rr.Code)
+	}
+
+	var body struct {
+		Error string   `json:"error"`
+		Pages []string `json:"pages"`
+	}
+	json.NewDecoder(rr.Body).Decode(&body)
+	if body.Error != "in use" {
+		t.Errorf(`error: want "in use", got %q`, body.Error)
+	}
+	if len(body.Pages) != 1 || body.Pages[0] != "blog/post" {
+		t.Errorf("pages: want [blog/post], got %v", body.Pages)
+	}
+
+	if _, statErr := os.Stat(filepath.Join(uploads, "1700000000_a.png")); statErr != nil {
+		t.Error("file must NOT be deleted on 409")
+	}
+}
+
+func TestDeleteImage_ForceQueryRemoves(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	os.MkdirAll(filepath.Join(content, "blog"), 0755)
+	os.WriteFile(filepath.Join(content, "blog", "post.md"),
+		[]byte("/uploads/1700000000_a.png"), 0644)
+
+	svc := NewService(uploads)
+	h := NewHandler(svc, content)
+
+	req := httptest.NewRequest("DELETE", "/api/images/1700000000_a.png?force=1", nil)
+	req.SetPathValue("filename", "1700000000_a.png")
+	rr := httptest.NewRecorder()
+	h.Delete(rr, req)
+
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("want 204, got %d: %s", rr.Code, rr.Body.String())
+	}
+	if _, statErr := os.Stat(filepath.Join(uploads, "1700000000_a.png")); !os.IsNotExist(statErr) {
+		t.Error("file should be deleted")
 	}
 }
 
