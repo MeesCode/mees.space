@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { logout } from "@/lib/auth";
+import { AdminNav } from "@/components/AdminNav";
 import { ImageInfo, ImageRefs } from "@/lib/types";
 
 type View = "all" | "unused";
@@ -145,18 +145,7 @@ export default function UploadsPage() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--color)" }}>
       {/* Left rail */}
       <div style={leftRailStyle}>
-        <div style={headerStyle}>
-          <span style={{ color: "var(--accent)", fontWeight: "bold", fontSize: "0.9rem" }}>
-            uploads
-          </span>
-          <span style={{ display: "flex", gap: 10 }}>
-            <a href="/" style={navLinkStyle}>site</a>
-            <a href="/admin/editor" style={navLinkStyle}>editor</a>
-            <button onClick={logout} style={{ ...navLinkStyle, background: "none", border: "none", cursor: "pointer" }}>
-              logout
-            </button>
-          </span>
-        </div>
+        <AdminNav current="uploads" />
 
         <div style={sectionLabel}>view</div>
         <RailRow active={view === "all"} onClick={() => setView("all")} testid="filter-all">
@@ -409,23 +398,11 @@ function formatBytes(n: number): string {
 }
 
 const leftRailStyle: React.CSSProperties = {
-  width: 170,
+  width: 260,
   borderRight: "1px solid rgba(255,255,255,0.08)",
-  padding: 14,
+  padding: 16,
   flexShrink: 0,
   overflow: "auto",
-};
-const headerStyle: React.CSSProperties = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: 16,
-};
-const navLinkStyle: React.CSSProperties = {
-  color: "rgba(255,255,255,0.4)",
-  textDecoration: "none",
-  fontFamily: "inherit",
-  fontSize: "0.75rem",
 };
 const sectionLabel: React.CSSProperties = {
   fontSize: 10,

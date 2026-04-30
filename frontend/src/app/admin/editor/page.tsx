@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
-import { logout } from "@/lib/auth";
+import { AdminNav } from "@/components/AdminNav";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { Pencil, Trash2 } from "lucide-react";
 import { TreeNode, PageData, ImageInfo } from "@/lib/types";
@@ -425,74 +425,18 @@ export default function EditorPage() {
           flexShrink: 0,
         }}
       >
+        <AdminNav current="editor" />
+
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "16px",
+            fontSize: 10,
+            color: "rgba(255,255,255,0.45)",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            margin: "0 0 6px",
           }}
         >
-          <span
-            style={{
-              color: "var(--accent)",
-              fontWeight: "bold",
-              fontSize: "0.9rem",
-            }}
-          >
-            pages
-          </span>
-          <span style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <a
-              href="/"
-              style={{
-                color: "rgba(255,255,255,0.4)",
-                textDecoration: "none",
-                fontFamily: "inherit",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-              }}
-            >
-              site
-            </a>
-            <a
-              href="/admin/uploads"
-              style={{
-                color: "rgba(255,255,255,0.4)",
-                textDecoration: "none",
-                fontFamily: "inherit",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-              }}
-            >
-              uploads
-            </a>
-            <a
-              href="/admin/settings"
-              style={{
-                color: "rgba(255,255,255,0.4)",
-                textDecoration: "none",
-                fontFamily: "inherit",
-                fontSize: "0.75rem",
-                cursor: "pointer",
-              }}
-            >
-              settings
-            </a>
-            <button
-              onClick={logout}
-              style={{
-                background: "none",
-                border: "none",
-                color: "rgba(255,255,255,0.4)",
-                cursor: "pointer",
-                fontFamily: "inherit",
-                fontSize: "0.75rem",
-              }}
-            >
-              logout
-            </button>
-          </span>
+          pages
         </div>
 
         <FileTree
