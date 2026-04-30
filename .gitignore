@@ -2,7 +2,6 @@ dist/
 uploads/*
 !uploads/.gitkeep
 content/*
-!content/home.md
 mees.db
 mees.db-shm
 mees.db-wal
