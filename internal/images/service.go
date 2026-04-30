@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -27,9 +28,11 @@ var allowedMIME = map[string]bool{
 }
 
 type ImageInfo struct {
-	Filename string `json:"filename"`
-	URL      string `json:"url"`
-	Size     int64  `json:"size"`
+	Filename   string    `json:"filename"`
+	URL        string    `json:"url"`
+	Size       int64     `json:"size"`
+	RefCount   int       `json:"ref_count"`
+	UploadedAt time.Time `json:"uploaded_at"`
 }
 
 type Service struct {
@@ -81,13 +84,15 @@ func (s *Service) Upload(file multipart.File, header *multipart.FileHeader) (*Im
 	}
 
 	return &ImageInfo{
-		Filename: filename,
-		URL:      "/uploads/" + filename,
-		Size:     info.Size(),
+		Filename:   filename,
+		URL:        "/uploads/" + filename,
+		Size:       info.Size(),
+		RefCount:   0,
+		UploadedAt: uploadedAtFromName(filename, info.ModTime()),
 	}, nil
 }
 
-func (s *Service) List() ([]ImageInfo, error) {
+func (s *Service) List(refs map[string][]string) ([]ImageInfo, error) {
 	entries, err := os.ReadDir(s.uploadsDir)
 	if err != nil {
 		return nil, fmt.Errorf("read uploads dir: %w", err)
@@ -102,10 +107,16 @@ func (s *Service) List() ([]ImageInfo, error) {
 		if err != nil {
 			continue
 		}
+		count := 0
+		if refs != nil {
+			count = len(refs[e.Name()])
+		}
 		images = append(images, ImageInfo{
-			Filename: e.Name(),
-			URL:      "/uploads/" + e.Name(),
-			Size:     info.Size(),
+			Filename:   e.Name(),
+			URL:        "/uploads/" + e.Name(),
+			Size:       info.Size(),
+			RefCount:   count,
+			UploadedAt: uploadedAtFromName(e.Name(), info.ModTime()),
 		})
 	}
 
@@ -123,6 +134,27 @@ func (s *Service) Delete(filename string) error {
 	}
 
 	return os.Remove(path)
+}
+
+// uploadedAtFromName parses the leading "<unix-ts>_" produced by Service.Upload.
+// Falls back to the supplied modTime for filenames without that prefix or with
+// a non-numeric prefix.
+func uploadedAtFromName(name string, modTime time.Time) time.Time {
+	idx := -1
+	for i, r := range name {
+		if r == '_' {
+			idx = i
+			break
+		}
+	}
+	if idx <= 0 {
+		return modTime
+	}
+	secs, err := strconv.ParseInt(name[:idx], 10, 64)
+	if err != nil {
+		return modTime
+	}
+	return time.Unix(secs, 0).UTC()
 }
 
 func sanitizeFilename(name string) string {

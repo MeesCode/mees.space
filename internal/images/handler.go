@@ -48,7 +48,7 @@ func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	images, err := h.svc.List()
+	images, err := h.svc.List(nil)
 	if err != nil {
 		httputil.JSONError(w, "failed to list images", http.StatusInternalServerError)
 		return
