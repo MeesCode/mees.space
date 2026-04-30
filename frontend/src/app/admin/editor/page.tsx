@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminNav, AdminNavFooter } from "@/components/AdminNav";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { Pencil, Trash2 } from "lucide-react";
 import { TreeNode, PageData, ImageInfo } from "@/lib/types";
@@ -420,121 +420,129 @@ export default function EditorPage() {
         style={{
           width: "260px",
           borderRight: "1px solid rgba(255,255,255,0.1)",
-          padding: "16px",
-          overflow: "auto",
           flexShrink: 0,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <AdminNav current="editor" />
-
-        <div
-          style={{
-            fontSize: 10,
-            color: "rgba(255,255,255,0.45)",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            margin: "0 0 6px",
-          }}
-        >
-          pages
+        <div style={{ padding: "16px 16px 0" }}>
+          <AdminNav current="editor" />
         </div>
 
-        <FileTree
-          nodes={tree}
-          selectedPath={selectedPath}
-          onSelect={loadPage}
-          onRenameFolder={renameFolder}
-          onDeleteFolder={deleteFolder}
-        />
+        <div style={{ flex: 1, overflow: "auto", padding: "12px 16px" }}>
+          <div
+            style={{
+              fontSize: 10,
+              color: "rgba(255,255,255,0.45)",
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              margin: "0 0 6px",
+            }}
+          >
+            pages
+          </div>
 
-        <div
-          style={{
-            marginTop: "16px",
-            display: "flex",
-            gap: "8px",
-            flexWrap: "wrap",
-          }}
-        >
-          <SmallButton onClick={() => { setShowNewPage(!showNewPage); setShowNewFolder(false); setNewName(""); setNewTitle(""); setNewFolder(""); }}>
-            + page
-          </SmallButton>
-          <SmallButton onClick={() => { setShowNewFolder(!showNewFolder); setShowNewPage(false); setNewName(""); setNewFolderParent(""); }}>
-            + folder
-          </SmallButton>
+          <FileTree
+            nodes={tree}
+            selectedPath={selectedPath}
+            onSelect={loadPage}
+            onRenameFolder={renameFolder}
+            onDeleteFolder={deleteFolder}
+          />
+
+          <div
+            style={{
+              marginTop: "16px",
+              display: "flex",
+              gap: "8px",
+              flexWrap: "wrap",
+            }}
+          >
+            <SmallButton onClick={() => { setShowNewPage(!showNewPage); setShowNewFolder(false); setNewName(""); setNewTitle(""); setNewFolder(""); }}>
+              + page
+            </SmallButton>
+            <SmallButton onClick={() => { setShowNewFolder(!showNewFolder); setShowNewPage(false); setNewName(""); setNewFolderParent(""); }}>
+              + folder
+            </SmallButton>
+          </div>
+
+          {showNewPage && (
+            <div style={{ marginTop: "12px" }}>
+              <select
+                value={newFolder}
+                onChange={(e) => setNewFolder(e.target.value)}
+                style={{ ...inputStyle, ...selectStyle, marginBottom: "6px" }}
+              >
+                <option value="">(root)</option>
+                {flattenFolders(tree).map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+              <input
+                placeholder="slug (e.g. my-post)"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                style={inputStyle}
+              />
+              <input
+                placeholder="title"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                style={{ ...inputStyle, marginTop: "6px" }}
+              />
+              <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
+                <SmallButton onClick={createPage}>create</SmallButton>
+                <SmallButton
+                  onClick={() => {
+                    setShowNewPage(false);
+                    setNewName("");
+                    setNewTitle("");
+                    setNewFolder("");
+                  }}
+                >
+                  cancel
+                </SmallButton>
+              </div>
+            </div>
+          )}
+
+          {showNewFolder && (
+            <div style={{ marginTop: "12px" }}>
+              <select
+                value={newFolderParent}
+                onChange={(e) => setNewFolderParent(e.target.value)}
+                style={{ ...inputStyle, ...selectStyle, marginBottom: "6px" }}
+              >
+                <option value="">(root)</option>
+                {flattenFolders(tree).map((f) => (
+                  <option key={f} value={f}>{f}</option>
+                ))}
+              </select>
+              <input
+                placeholder="folder name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                style={inputStyle}
+              />
+              <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
+                <SmallButton onClick={createFolder}>create</SmallButton>
+                <SmallButton
+                  onClick={() => {
+                    setShowNewFolder(false);
+                    setNewName("");
+                    setNewFolderParent("");
+                  }}
+                >
+                  cancel
+                </SmallButton>
+              </div>
+            </div>
+          )}
         </div>
 
-        {showNewPage && (
-          <div style={{ marginTop: "12px" }}>
-            <select
-              value={newFolder}
-              onChange={(e) => setNewFolder(e.target.value)}
-              style={{ ...inputStyle, ...selectStyle, marginBottom: "6px" }}
-            >
-              <option value="">(root)</option>
-              {flattenFolders(tree).map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-            <input
-              placeholder="slug (e.g. my-post)"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              style={inputStyle}
-            />
-            <input
-              placeholder="title"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              style={{ ...inputStyle, marginTop: "6px" }}
-            />
-            <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
-              <SmallButton onClick={createPage}>create</SmallButton>
-              <SmallButton
-                onClick={() => {
-                  setShowNewPage(false);
-                  setNewName("");
-                  setNewTitle("");
-                  setNewFolder("");
-                }}
-              >
-                cancel
-              </SmallButton>
-            </div>
-          </div>
-        )}
-
-        {showNewFolder && (
-          <div style={{ marginTop: "12px" }}>
-            <select
-              value={newFolderParent}
-              onChange={(e) => setNewFolderParent(e.target.value)}
-              style={{ ...inputStyle, ...selectStyle, marginBottom: "6px" }}
-            >
-              <option value="">(root)</option>
-              {flattenFolders(tree).map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
-            <input
-              placeholder="folder name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              style={inputStyle}
-            />
-            <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
-              <SmallButton onClick={createFolder}>create</SmallButton>
-              <SmallButton
-                onClick={() => {
-                  setShowNewFolder(false);
-                  setNewName("");
-                  setNewFolderParent("");
-                }}
-              >
-                cancel
-              </SmallButton>
-            </div>
-          </div>
-        )}
+        <div style={{ padding: "10px 16px 16px" }}>
+          <AdminNavFooter />
+        </div>
       </div>
 
       {/* Editor Panel */}

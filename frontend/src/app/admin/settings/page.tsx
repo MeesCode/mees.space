@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { AdminNav, AdminNavFooter } from "@/components/AdminNav";
 
 export default function SettingsPage() {
   const [systemPrompt, setSystemPrompt] = useState("");
@@ -46,258 +47,260 @@ export default function SettingsPage() {
   };
 
   return (
-    <div
-      style={{
-        maxWidth: "700px",
-        margin: "0 auto",
-        padding: "40px 20px",
-      }}
-    >
-      <div
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--color)" }}>
+      <aside
         style={{
+          width: 260,
+          borderRight: "1px solid rgba(255,255,255,0.08)",
+          flexShrink: 0,
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "32px",
+          flexDirection: "column",
         }}
       >
-        <h1
-          style={{
-            color: "var(--accent)",
-            fontSize: "1.2rem",
-            margin: 0,
-          }}
-        >
-          settings
-        </h1>
-        <a
-          href="/admin/editor"
-          style={{
-            color: "rgba(255,255,255,0.4)",
-            textDecoration: "none",
-            fontSize: "0.85rem",
-            fontFamily: "inherit",
-          }}
-        >
-          ← back to editor
-        </a>
-      </div>
+        <div style={{ padding: "16px 16px 0" }}>
+          <AdminNav current="settings" />
+        </div>
+        <div style={{ flex: 1, overflow: "auto" }} />
+        <div style={{ padding: "10px 16px 16px" }}>
+          <AdminNavFooter />
+        </div>
+      </aside>
 
-      <div style={{ marginBottom: "24px" }}>
-        <label
-          style={{
-            display: "block",
-            color: "rgba(255,255,255,0.6)",
-            fontSize: "0.8rem",
-            marginBottom: "8px",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          AI System Prompt
-        </label>
-        <textarea
-          value={systemPrompt}
-          onChange={(e) => setSystemPrompt(e.target.value)}
-          rows={6}
-          style={{
-            width: "100%",
-            background: "var(--background)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "4px",
-            padding: "10px",
-            color: "var(--color)",
-            fontFamily: "inherit",
-            fontSize: "0.85rem",
-            lineHeight: "1.6",
-            resize: "vertical",
-            outline: "none",
-          }}
-        />
-        <p
-          style={{
-            color: "rgba(255,255,255,0.3)",
-            fontSize: "0.75rem",
-            marginTop: "6px",
-          }}
-        >
-          This is prepended as a system message to every AI request from the
-          editor.
-        </p>
-      </div>
-
-      <div style={{ marginBottom: "24px" }}>
+      <main style={{ flex: 1, overflow: "auto" }}>
         <div
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "8px",
+            maxWidth: "700px",
+            margin: "0 auto",
+            padding: "40px 20px",
           }}
         >
-          <label
-            htmlFor="description-prompt"
+          <h1
             style={{
-              color: "rgba(255,255,255,0.6)",
-              fontSize: "0.8rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
+              color: "var(--accent)",
+              fontSize: "1.2rem",
+              margin: "0 0 32px",
             }}
           >
-            SEO Description Prompt
-          </label>
-          {descriptionPrompt && (
-            <button
-              type="button"
-              onClick={() => setDescriptionPrompt("")}
-              aria-label="Reset SEO description prompt to default"
+            settings
+          </h1>
+
+          <div style={{ marginBottom: "24px" }}>
+            <label
               style={{
-                background: "none",
-                border: "none",
-                color: "rgba(255,255,255,0.4)",
-                fontSize: "0.75rem",
-                fontFamily: "inherit",
-                cursor: "pointer",
-                padding: 0,
-                textDecoration: "underline",
+                display: "block",
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.8rem",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
               }}
             >
-              reset to default
+              AI System Prompt
+            </label>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => setSystemPrompt(e.target.value)}
+              rows={6}
+              style={{
+                width: "100%",
+                background: "var(--background)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "4px",
+                padding: "10px",
+                color: "var(--color)",
+                fontFamily: "inherit",
+                fontSize: "0.85rem",
+                lineHeight: "1.6",
+                resize: "vertical",
+                outline: "none",
+              }}
+            />
+            <p
+              style={{
+                color: "rgba(255,255,255,0.3)",
+                fontSize: "0.75rem",
+                marginTop: "6px",
+              }}
+            >
+              This is prepended as a system message to every AI request from the
+              editor.
+            </p>
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "8px",
+              }}
+            >
+              <label
+                htmlFor="description-prompt"
+                style={{
+                  color: "rgba(255,255,255,0.6)",
+                  fontSize: "0.8rem",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                SEO Description Prompt
+              </label>
+              {descriptionPrompt && (
+                <button
+                  type="button"
+                  onClick={() => setDescriptionPrompt("")}
+                  aria-label="Reset SEO description prompt to default"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.4)",
+                    fontSize: "0.75rem",
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                >
+                  reset to default
+                </button>
+              )}
+            </div>
+            <textarea
+              id="description-prompt"
+              value={descriptionPrompt}
+              onChange={(e) => setDescriptionPrompt(e.target.value)}
+              placeholder={descriptionPromptDefault}
+              rows={4}
+              style={{
+                width: "100%",
+                background: "var(--background)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "4px",
+                padding: "10px",
+                color: "var(--color)",
+                fontFamily: "inherit",
+                fontSize: "0.85rem",
+                lineHeight: "1.6",
+                resize: "vertical",
+                outline: "none",
+              }}
+            />
+            <p
+              style={{
+                color: "rgba(255,255,255,0.3)",
+                fontSize: "0.75rem",
+                marginTop: "6px",
+              }}
+            >
+              Used when generating meta descriptions. Leave empty to use the default.
+            </p>
+          </div>
+
+          <div style={{ marginBottom: "24px" }}>
+            <label
+              style={{
+                display: "block",
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.8rem",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Model
+            </label>
+            <select
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              style={{
+                width: "100%",
+                background: "var(--background)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "4px",
+                padding: "8px 28px 8px 10px",
+                color: "var(--color)",
+                fontFamily: "inherit",
+                fontSize: "0.85rem",
+                outline: "none",
+                appearance: "auto" as const,
+              }}
+            >
+              <option value="claude-haiku-4-5">Claude 4.5 Haiku (fast, cheap)</option>
+              <option value="claude-sonnet-4-6">Claude 4.6 Sonnet (balanced)</option>
+              <option value="claude-opus-4-7">Claude 4.7 Opus (smartest)</option>
+            </select>
+          </div>
+
+          <div style={{ marginBottom: "32px" }}>
+            <label
+              style={{
+                display: "block",
+                color: "rgba(255,255,255,0.6)",
+                fontSize: "0.8rem",
+                marginBottom: "8px",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              Anthropic API Key
+            </label>
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder="sk-ant-••••••••"
+              style={{
+                width: "100%",
+                background: "var(--background)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: "4px",
+                padding: "8px 10px",
+                color: "var(--color)",
+                fontFamily: "inherit",
+                fontSize: "0.85rem",
+                outline: "none",
+              }}
+            />
+            <p
+              style={{
+                color: "rgba(255,255,255,0.3)",
+                fontSize: "0.75rem",
+                marginTop: "6px",
+              }}
+            >
+              Leave empty to keep the current key. The key is stored on the server
+              and never sent to the browser.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              onClick={save}
+              disabled={saving}
+              style={{
+                background: "var(--accent)",
+                border: "none",
+                borderRadius: "4px",
+                padding: "8px 20px",
+                color: "#000",
+                fontFamily: "inherit",
+                fontWeight: "bold",
+                cursor: saving ? "wait" : "pointer",
+                fontSize: "0.85rem",
+              }}
+            >
+              {saving ? "Saving..." : "Save"}
             </button>
-          )}
+            {message && (
+              <span style={{ color: "var(--accent)", fontSize: "0.85rem" }}>
+                {message}
+              </span>
+            )}
+          </div>
         </div>
-        <textarea
-          id="description-prompt"
-          value={descriptionPrompt}
-          onChange={(e) => setDescriptionPrompt(e.target.value)}
-          placeholder={descriptionPromptDefault}
-          rows={4}
-          style={{
-            width: "100%",
-            background: "var(--background)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "4px",
-            padding: "10px",
-            color: "var(--color)",
-            fontFamily: "inherit",
-            fontSize: "0.85rem",
-            lineHeight: "1.6",
-            resize: "vertical",
-            outline: "none",
-          }}
-        />
-        <p
-          style={{
-            color: "rgba(255,255,255,0.3)",
-            fontSize: "0.75rem",
-            marginTop: "6px",
-          }}
-        >
-          Used when generating meta descriptions. Leave empty to use the default.
-        </p>
-      </div>
-
-      <div style={{ marginBottom: "24px" }}>
-        <label
-          style={{
-            display: "block",
-            color: "rgba(255,255,255,0.6)",
-            fontSize: "0.8rem",
-            marginBottom: "8px",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          Model
-        </label>
-        <select
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          style={{
-            width: "100%",
-            background: "var(--background)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "4px",
-            padding: "8px 28px 8px 10px",
-            color: "var(--color)",
-            fontFamily: "inherit",
-            fontSize: "0.85rem",
-            outline: "none",
-            appearance: "auto" as const,
-          }}
-        >
-          <option value="claude-haiku-4-5">Claude 4.5 Haiku (fast, cheap)</option>
-          <option value="claude-sonnet-4-6">Claude 4.6 Sonnet (balanced)</option>
-          <option value="claude-opus-4-7">Claude 4.7 Opus (smartest)</option>
-        </select>
-      </div>
-
-      <div style={{ marginBottom: "32px" }}>
-        <label
-          style={{
-            display: "block",
-            color: "rgba(255,255,255,0.6)",
-            fontSize: "0.8rem",
-            marginBottom: "8px",
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-          }}
-        >
-          Anthropic API Key
-        </label>
-        <input
-          type="password"
-          value={apiKey}
-          onChange={(e) => setApiKey(e.target.value)}
-          placeholder="sk-ant-••••••••"
-          style={{
-            width: "100%",
-            background: "var(--background)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "4px",
-            padding: "8px 10px",
-            color: "var(--color)",
-            fontFamily: "inherit",
-            fontSize: "0.85rem",
-            outline: "none",
-          }}
-        />
-        <p
-          style={{
-            color: "rgba(255,255,255,0.3)",
-            fontSize: "0.75rem",
-            marginTop: "6px",
-          }}
-        >
-          Leave empty to keep the current key. The key is stored on the server
-          and never sent to the browser.
-        </p>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <button
-          onClick={save}
-          disabled={saving}
-          style={{
-            background: "var(--accent)",
-            border: "none",
-            borderRadius: "4px",
-            padding: "8px 20px",
-            color: "#000",
-            fontFamily: "inherit",
-            fontWeight: "bold",
-            cursor: saving ? "wait" : "pointer",
-            fontSize: "0.85rem",
-          }}
-        >
-          {saving ? "Saving..." : "Save"}
-        </button>
-        {message && (
-          <span style={{ color: "var(--accent)", fontSize: "0.85rem" }}>
-            {message}
-          </span>
-        )}
-      </div>
+      </main>
     </div>
   );
 }

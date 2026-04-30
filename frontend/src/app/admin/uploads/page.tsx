@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
-import { AdminNav } from "@/components/AdminNav";
+import { AdminNav, AdminNavFooter } from "@/components/AdminNav";
 import { ImageInfo, ImageRefs } from "@/lib/types";
 
 type View = "all" | "unused";
@@ -145,45 +145,53 @@ export default function UploadsPage() {
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--color)" }}>
       {/* Left rail */}
       <div style={leftRailStyle}>
-        <AdminNav current="uploads" />
+        <div style={{ padding: "16px 16px 0" }}>
+          <AdminNav current="uploads" />
+        </div>
 
-        <div style={sectionLabel}>view</div>
-        <RailRow active={view === "all"} onClick={() => setView("all")} testid="filter-all">
-          ★ all images <span style={{ float: "right", color: "rgba(255,255,255,0.4)" }}>{images.length}</span>
-        </RailRow>
-        <RailRow active={view === "unused"} onClick={() => setView("unused")} testid="filter-unused">
-          unused only <span style={{ float: "right", color: "#ff6b6b" }}>{unusedCount}</span>
-        </RailRow>
+        <div style={{ flex: 1, overflow: "auto", padding: "0 16px" }}>
+          <div style={sectionLabel}>view</div>
+          <RailRow active={view === "all"} onClick={() => setView("all")} testid="filter-all">
+            ★ all images <span style={{ float: "right", color: "rgba(255,255,255,0.4)" }}>{images.length}</span>
+          </RailRow>
+          <RailRow active={view === "unused"} onClick={() => setView("unused")} testid="filter-unused">
+            unused only <span style={{ float: "right", color: "#ff6b6b" }}>{unusedCount}</span>
+          </RailRow>
 
-        <div style={sectionLabel}>sort</div>
-        <RailRow active={sort === "newest"} onClick={() => setSort("newest")} testid="sort-newest">↓ newest</RailRow>
-        <RailRow active={sort === "name"} onClick={() => setSort("name")} testid="sort-name">name</RailRow>
-        <RailRow active={sort === "size"} onClick={() => setSort("size")} testid="sort-size">size</RailRow>
+          <div style={sectionLabel}>sort</div>
+          <RailRow active={sort === "newest"} onClick={() => setSort("newest")} testid="sort-newest">↓ newest</RailRow>
+          <RailRow active={sort === "name"} onClick={() => setSort("name")} testid="sort-name">name</RailRow>
+          <RailRow active={sort === "size"} onClick={() => setSort("size")} testid="sort-size">size</RailRow>
 
-        <div
-          data-testid="dropzone"
-          onDragOver={(e) => { e.preventDefault(); }}
-          onDrop={(e) => {
-            e.preventDefault();
-            const files = Array.from(e.dataTransfer?.files ?? []);
-            files.forEach((f) => uploadFile(f));
-          }}
-          onClick={() => document.getElementById("upload-input")?.click()}
-          style={dropzoneStyle}
-        >
-          ⬆ drag &amp; drop<br />or click to upload
-          <input
-            id="upload-input"
-            type="file"
-            accept="image/*"
-            multiple
-            style={{ display: "none" }}
-            onChange={(e) => {
-              const files = Array.from(e.target.files ?? []);
+          <div
+            data-testid="dropzone"
+            onDragOver={(e) => { e.preventDefault(); }}
+            onDrop={(e) => {
+              e.preventDefault();
+              const files = Array.from(e.dataTransfer?.files ?? []);
               files.forEach((f) => uploadFile(f));
-              e.currentTarget.value = "";
             }}
-          />
+            onClick={() => document.getElementById("upload-input")?.click()}
+            style={dropzoneStyle}
+          >
+            ⬆ drag &amp; drop<br />or click to upload
+            <input
+              id="upload-input"
+              type="file"
+              accept="image/*"
+              multiple
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const files = Array.from(e.target.files ?? []);
+                files.forEach((f) => uploadFile(f));
+                e.currentTarget.value = "";
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ padding: "10px 16px 16px" }}>
+          <AdminNavFooter />
         </div>
       </div>
 
@@ -400,9 +408,9 @@ function formatBytes(n: number): string {
 const leftRailStyle: React.CSSProperties = {
   width: 260,
   borderRight: "1px solid rgba(255,255,255,0.08)",
-  padding: 16,
   flexShrink: 0,
-  overflow: "auto",
+  display: "flex",
+  flexDirection: "column",
 };
 const sectionLabel: React.CSSProperties = {
   fontSize: 10,
