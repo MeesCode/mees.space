@@ -23,7 +23,7 @@ export function MarkdownRenderer({ content }: Props) {
           [
             rehypeAutolinkHeadings,
             {
-              behavior: "prepend",
+              behavior: "append",
               properties: {
                 className: ["heading-anchor"],
                 "aria-hidden": "true",

@@ -55,7 +55,7 @@ body {
 
 #content {
   max-width: 900px;
-  padding: 70px 20px 0 48px;
+  padding: 70px 20px 0;
   border-left: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -667,20 +667,8 @@ html {
 }
 
 /* ——— Heading Anchor Links ——— */
-/* Position the anchor in the left gutter so it doesn't shift the heading text
-   when hidden. Each heading becomes a positioning context for its anchor. */
-#content h1,
-#content h2,
-#content h3,
-#content h4,
-#content h5,
-#content h6 {
-  position: relative;
-}
-
 #content .heading-anchor {
-  position: absolute;
-  left: -1.2em;
+  margin-left: 0.5em;
   color: rgba(255, 255, 255, 0.25);
   text-decoration: none;
   opacity: 0;
@@ -706,7 +694,7 @@ html {
 /* ——— Page Metadata Bar ——— */
 .page-meta {
   max-width: 900px;
-  padding: 0 20px 0 48px;
+  padding: 0 20px;
   margin-top: 70px;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.4);
