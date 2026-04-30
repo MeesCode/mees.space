@@ -24,4 +24,11 @@ export interface ImageInfo {
   filename: string;
   url: string;
   size: number;
+  ref_count: number;     // -1 means refs scan failed; treat as unknown
+  uploaded_at: string;   // RFC3339
+}
+
+export interface ImageRefs {
+  filename: string;
+  pages: string[];       // page paths (no .md, no leading slash)
 }

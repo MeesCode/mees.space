@@ -53,6 +53,17 @@ export default function EditorPage() {
     loadTree();
   }, [loadTree]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sp = new URLSearchParams(window.location.search);
+    const path = sp.get("path");
+    if (path) {
+      loadPage(path);
+    }
+    // intentionally only on first mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Keep ref in sync with state to avoid stale closures in SSE handler
   useEffect(() => { preAiContentRef.current = preAiContent; }, [preAiContent]);
 
@@ -443,6 +454,18 @@ export default function EditorPage() {
               }}
             >
               site
+            </a>
+            <a
+              href="/admin/uploads"
+              style={{
+                color: "rgba(255,255,255,0.4)",
+                textDecoration: "none",
+                fontFamily: "inherit",
+                fontSize: "0.75rem",
+                cursor: "pointer",
+              }}
+            >
+              uploads
             </a>
             <a
               href="/admin/settings"
