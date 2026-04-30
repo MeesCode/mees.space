@@ -121,6 +121,7 @@ func main() {
 	// Images
 	mux.Handle("GET /api/images", protected(imagesHandler.List))
 	mux.Handle("POST /api/images", protected(imagesHandler.Upload))
+	mux.Handle("GET /api/images/{filename}/refs", protected(imagesHandler.GetRefs))
 	mux.Handle("DELETE /api/images/{filename}", protected(imagesHandler.Delete))
 
 	// Settings (protected)

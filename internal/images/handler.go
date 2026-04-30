@@ -3,6 +3,9 @@ package images
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"mees.space/internal/httputil"
 )
@@ -68,6 +71,39 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(images)
+}
+
+func (h *Handler) GetRefs(w http.ResponseWriter, r *http.Request) {
+	filename := r.PathValue("filename")
+	if filename == "" {
+		httputil.JSONError(w, "filename required", http.StatusBadRequest)
+		return
+	}
+	if strings.Contains(filename, "/") || strings.Contains(filename, "\\") || strings.Contains(filename, "..") {
+		httputil.JSONError(w, "image not found", http.StatusNotFound)
+		return
+	}
+	if _, err := os.Stat(filepath.Join(h.svc.uploadsDir, filename)); os.IsNotExist(err) {
+		httputil.JSONError(w, "image not found", http.StatusNotFound)
+		return
+	}
+
+	refs, err := h.svc.Refs(h.contentDir)
+	if err != nil {
+		httputil.JSONError(w, "failed to scan references", http.StatusInternalServerError)
+		return
+	}
+
+	pages := refs[filename]
+	if pages == nil {
+		pages = []string{}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]any{
+		"filename": filename,
+		"pages":    pages,
+	})
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

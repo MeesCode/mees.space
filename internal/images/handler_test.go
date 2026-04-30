@@ -143,6 +143,61 @@ func TestDeleteImage_NotFound(t *testing.T) {
 	}
 }
 
+func TestGetRefs_OK(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	os.MkdirAll(filepath.Join(content, "blog"), 0755)
+	os.WriteFile(filepath.Join(content, "blog", "post.md"),
+		[]byte("/uploads/1700000000_a.png"), 0644)
+	os.WriteFile(filepath.Join(content, "about.md"),
+		[]byte("/uploads/1700000000_a.png"), 0644)
+
+	svc := NewService(uploads)
+	h := NewHandler(svc, content)
+
+	req := httptest.NewRequest("GET", "/api/images/1700000000_a.png/refs", nil)
+	req.SetPathValue("filename", "1700000000_a.png")
+	rr := httptest.NewRecorder()
+	h.GetRefs(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	var body struct {
+		Filename string   `json:"filename"`
+		Pages    []string `json:"pages"`
+	}
+	json.NewDecoder(rr.Body).Decode(&body)
+	if body.Filename != "1700000000_a.png" {
+		t.Errorf("filename: %q", body.Filename)
+	}
+	want := map[string]bool{"blog/post": true, "about": true}
+	for _, p := range body.Pages {
+		delete(want, p)
+	}
+	if len(want) != 0 {
+		t.Errorf("missing pages: %v (got %v)", want, body.Pages)
+	}
+}
+
+func TestGetRefs_NotFound(t *testing.T) {
+	uploads := t.TempDir()
+	svc := NewService(uploads)
+	h := NewHandler(svc, t.TempDir())
+
+	req := httptest.NewRequest("GET", "/api/images/nope.png/refs", nil)
+	req.SetPathValue("filename", "nope.png")
+	rr := httptest.NewRecorder()
+	h.GetRefs(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("want 404, got %d", rr.Code)
+	}
+}
+
 func TestListImages_PopulatesRefCount(t *testing.T) {
 	uploads := t.TempDir()
 	content := t.TempDir()
