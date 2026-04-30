@@ -33,7 +33,7 @@ func createTestImage(t *testing.T) (*bytes.Buffer, string) {
 func TestUploadImage(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc)
+	h := NewHandler(svc, "")
 
 	body, contentType := createTestImage(t)
 
@@ -62,7 +62,7 @@ func TestUploadImage(t *testing.T) {
 func TestUploadInvalidType(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc)
+	h := NewHandler(svc, "")
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -84,7 +84,7 @@ func TestUploadInvalidType(t *testing.T) {
 func TestListImages(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc)
+	h := NewHandler(svc, "")
 
 	// Create a test file
 	os.WriteFile(filepath.Join(uploadsDir, "test.png"), []byte("fake"), 0644)
@@ -108,7 +108,7 @@ func TestListImages(t *testing.T) {
 func TestDeleteImage(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc)
+	h := NewHandler(svc, "")
 
 	os.WriteFile(filepath.Join(uploadsDir, "test.png"), []byte("fake"), 0644)
 
@@ -130,7 +130,7 @@ func TestDeleteImage(t *testing.T) {
 func TestDeleteImage_NotFound(t *testing.T) {
 	uploadsDir := t.TempDir()
 	svc := NewService(uploadsDir)
-	h := NewHandler(svc)
+	h := NewHandler(svc, "")
 
 	req := httptest.NewRequest("DELETE", "/api/images/nonexistent.png", nil)
 	req.SetPathValue("filename", "nonexistent.png")
@@ -140,5 +140,41 @@ func TestDeleteImage_NotFound(t *testing.T) {
 
 	if rr.Code != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", rr.Code)
+	}
+}
+
+func TestListImages_PopulatesRefCount(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	os.WriteFile(filepath.Join(uploads, "1700000001_b.png"), []byte("x"), 0644)
+	os.MkdirAll(filepath.Join(content, "blog"), 0755)
+	os.WriteFile(filepath.Join(content, "blog", "post.md"),
+		[]byte("![](/uploads/1700000000_a.png)"), 0644)
+
+	svc := NewService(uploads)
+	h := NewHandler(svc, content)
+
+	req := httptest.NewRequest("GET", "/api/images", nil)
+	rr := httptest.NewRecorder()
+	h.List(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("want 200, got %d", rr.Code)
+	}
+
+	var images []ImageInfo
+	json.NewDecoder(rr.Body).Decode(&images)
+
+	counts := map[string]int{}
+	for _, im := range images {
+		counts[im.Filename] = im.RefCount
+	}
+	if counts["1700000000_a.png"] != 1 {
+		t.Errorf("a.png ref_count: want 1, got %d", counts["1700000000_a.png"])
+	}
+	if counts["1700000001_b.png"] != 0 {
+		t.Errorf("b.png ref_count: want 0, got %d", counts["1700000001_b.png"])
 	}
 }

@@ -10,11 +10,12 @@ import (
 const maxUploadSize = 10 << 20 // 10MB
 
 type Handler struct {
-	svc *Service
+	svc        *Service
+	contentDir string
 }
 
-func NewHandler(svc *Service) *Handler {
-	return &Handler{svc: svc}
+func NewHandler(svc *Service, contentDir string) *Handler {
+	return &Handler{svc: svc, contentDir: contentDir}
 }
 
 func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
@@ -48,7 +49,8 @@ func (h *Handler) Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	images, err := h.svc.List(nil)
+	refs, refsErr := h.svc.Refs(h.contentDir)
+	images, err := h.svc.List(refs)
 	if err != nil {
 		httputil.JSONError(w, "failed to list images", http.StatusInternalServerError)
 		return
@@ -56,6 +58,12 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	if images == nil {
 		images = []ImageInfo{}
+	}
+
+	if refsErr != nil {
+		for i := range images {
+			images[i].RefCount = -1
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -73,7 +73,7 @@ func main() {
 	go descGen.BackfillEmpty(backfillCtx, pagesSvc)
 
 	imagesSvc := images.NewService(cfg.UploadsDir)
-	imagesHandler := images.NewHandler(imagesSvc)
+	imagesHandler := images.NewHandler(imagesSvc, cfg.ContentDir)
 
 	foldersHandler := folders.NewHandler(cfg.ContentDir, db)
 
