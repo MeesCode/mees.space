@@ -16,6 +16,12 @@ export default function UploadsPage() {
   const [refs, setRefs] = useState<string[] | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ filename: string; pages: string[] } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 5000);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +69,7 @@ export default function UploadsPage() {
   const copyUrl = async () => {
     if (!selectedInfo) return;
     await navigator.clipboard?.writeText(selectedInfo.url);
+    showToast("URL copied");
   };
 
   const requestDelete = async (filename: string) => {
@@ -81,10 +88,12 @@ export default function UploadsPage() {
         return;
       }
       if (res.status === 404) {
+        showToast("image already gone");
         setImages((prev) => prev.filter((i) => i.filename !== filename));
         setSelected((s) => (s === filename ? null : s));
         return;
       }
+      showToast("Delete failed");
       return;
     }
 
@@ -100,9 +109,15 @@ export default function UploadsPage() {
       `/api/images/${encodeURIComponent(pendingDelete.filename)}?force=1`,
       { method: "DELETE" },
     );
-    if (res.status === 204 || res.status === 404) {
+    if (res.status === 204) {
       setImages((prev) => prev.filter((i) => i.filename !== pendingDelete.filename));
       setSelected((s) => (s === pendingDelete.filename ? null : s));
+    } else if (res.status === 404) {
+      showToast("image already gone");
+      setImages((prev) => prev.filter((i) => i.filename !== pendingDelete.filename));
+      setSelected((s) => (s === pendingDelete.filename ? null : s));
+    } else {
+      showToast("Delete failed");
     }
     setPendingDelete(null);
   };
@@ -110,10 +125,19 @@ export default function UploadsPage() {
   const uploadFile = async (file: File) => {
     const form = new FormData();
     form.append("file", file);
-    const res = await apiFetch("/api/images", { method: "POST", body: form });
+    let res: Response;
+    try {
+      res = await apiFetch("/api/images", { method: "POST", body: form });
+    } catch {
+      showToast("Upload failed — check your connection");
+      return;
+    }
     if (res.ok) {
       const info: ImageInfo = await res.json();
       setImages((prev) => [info, ...prev.filter((i) => i.filename !== info.filename)]);
+    } else {
+      const body = await res.json().catch(() => null);
+      showToast((body as { error?: string } | null)?.error || "Upload failed");
     }
   };
 
@@ -303,6 +327,32 @@ export default function UploadsPage() {
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)" }}>Select an image</div>
         )}
       </div>
+
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "20px",
+            right: "20px",
+            maxWidth: "400px",
+            background: "rgba(40, 30, 30, 0.95)",
+            border: "1px solid rgba(255, 100, 100, 0.4)",
+            borderRadius: "8px",
+            padding: "12px 16px",
+            color: "#ff6b6b",
+            fontSize: "0.8rem",
+            fontFamily: "inherit",
+            lineHeight: "1.5",
+            zIndex: 9999,
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.4)",
+            cursor: "pointer",
+            wordBreak: "break-word",
+          }}
+          onClick={() => setToast(null)}
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

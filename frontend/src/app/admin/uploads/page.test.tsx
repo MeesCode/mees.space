@@ -130,6 +130,24 @@ describe("UploadsPage — filters, sort, detail rail", () => {
 
     expect(writeText).toHaveBeenCalledWith("/uploads/1700000000_a.png");
   });
+
+  it("shows a toast after Copy URL is clicked", async () => {
+    installFetchMock(sample);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+    render(<UploadsPage />);
+    await waitFor(() => screen.getByText("1700000000_a.png"));
+
+    fireEvent.click(screen.getByText("1700000000_a.png").parentElement!);
+    fireEvent.click(screen.getByTestId("copy-url"));
+
+    await waitFor(() => {
+      expect(screen.getByText(/url copied/i)).toBeDefined();
+    });
+  });
 });
 
 describe("UploadsPage — delete flow", () => {
@@ -235,6 +253,36 @@ describe("UploadsPage — delete flow", () => {
 describe("UploadsPage — upload", () => {
   beforeEach(() => {
     localStorage.setItem("access_token", "tok");
+  });
+
+  it("shows a toast when upload returns 400 with an error body", async () => {
+    const fetchMock = vi.fn().mockImplementation((path: string, init?: RequestInit) => {
+      if (path === "/api/images" && (!init || init.method === undefined)) {
+        return Promise.resolve(new Response(JSON.stringify(sample), { status: 200 }));
+      }
+      if (path === "/api/images" && init?.method === "POST") {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ error: "invalid file type, only images allowed" }),
+            { status: 400 },
+          ),
+        );
+      }
+      return Promise.resolve(new Response("", { status: 404 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<UploadsPage />);
+    await waitFor(() => screen.getByText("1700000000_a.png"));
+
+    const dropzone = screen.getByTestId("dropzone");
+    const file = new File(["hello"], "bad.txt", { type: "text/plain" });
+    const dataTransfer = { files: [file], items: [], types: ["Files"] };
+    fireEvent.drop(dropzone, { dataTransfer });
+
+    await waitFor(() => {
+      expect(screen.getByText(/invalid file type, only images allowed/i)).toBeDefined();
+    });
   });
 
   it("dropping a file POSTs to /api/images and prepends the response", async () => {
