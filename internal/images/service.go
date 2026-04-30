@@ -1,9 +1,11 @@
 package images
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -155,6 +157,74 @@ func uploadedAtFromName(name string, modTime time.Time) time.Time {
 		return modTime
 	}
 	return time.Unix(secs, 0).UTC()
+}
+
+// Refs walks contentDir for .md files and returns a map from each upload
+// filename to the page paths whose contents contain that filename as a
+// substring. Drafts and unpublished pages are scanned just like any other
+// .md file. The map always has an entry for every non-.gitkeep file in
+// the uploads directory; unused images map to an empty slice.
+//
+// On a per-file read error the file is skipped and the first such error is
+// returned alongside the (still useful) partial map. Callers that need a
+// fully trustworthy result should treat any non-nil error as "unknown".
+func (s *Service) Refs(contentDir string) (map[string][]string, error) {
+	entries, err := os.ReadDir(s.uploadsDir)
+	if err != nil {
+		return nil, fmt.Errorf("read uploads dir: %w", err)
+	}
+
+	out := make(map[string][]string, len(entries))
+	names := make([]string, 0, len(entries))
+	for _, e := range entries {
+		if e.IsDir() || e.Name() == ".gitkeep" {
+			continue
+		}
+		out[e.Name()] = nil
+		names = append(names, e.Name())
+	}
+
+	if len(names) == 0 {
+		return out, nil
+	}
+
+	var firstErr error
+	walkErr := filepath.WalkDir(contentDir, func(path string, d fs.DirEntry, werr error) error {
+		if werr != nil {
+			if firstErr == nil {
+				firstErr = werr
+			}
+			return nil
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
+			return nil
+		}
+		body, readErr := os.ReadFile(path)
+		if readErr != nil {
+			if firstErr == nil {
+				firstErr = readErr
+			}
+			return nil
+		}
+		rel, relErr := filepath.Rel(contentDir, path)
+		if relErr != nil {
+			rel = path
+		}
+		page := strings.TrimSuffix(filepath.ToSlash(rel), ".md")
+		for _, name := range names {
+			if bytes.Contains(body, []byte(name)) {
+				out[name] = append(out[name], page)
+			}
+		}
+		return nil
+	})
+	if firstErr == nil {
+		firstErr = walkErr
+	}
+	return out, firstErr
 }
 
 func sanitizeFilename(name string) string {

@@ -7,6 +7,17 @@ import (
 	"time"
 )
 
+func writeFile(t *testing.T, root, rel, body string) {
+	t.Helper()
+	full := filepath.Join(root, rel)
+	if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(full, []byte(body), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUploadedAtFromName_ParsesUnixPrefix(t *testing.T) {
 	got := uploadedAtFromName("1700000000_my-image.png", time.Time{})
 	want := time.Unix(1700000000, 0).UTC()
@@ -76,5 +87,84 @@ func TestServiceList_RefsMapPopulatesRefCount(t *testing.T) {
 	}
 	if counts["1700000001_b.png"] != 0 {
 		t.Errorf("want 0 refs for b.png, got %d", counts["1700000001_b.png"])
+	}
+}
+
+func TestRefs_FindsMarkdownAndRawHTML(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	os.WriteFile(filepath.Join(uploads, "1700000001_b.png"), []byte("x"), 0644)
+	os.WriteFile(filepath.Join(uploads, "1700000002_c.png"), []byte("x"), 0644)
+
+	writeFile(t, content, "blog/post.md", "# hi\n\n![alt](/uploads/1700000000_a.png)\n")
+	writeFile(t, content, "about.md", `<img src="/uploads/1700000001_b.png">`)
+	writeFile(t, content, "drafts/wip.md", "draft using /uploads/1700000000_a.png too")
+
+	svc := NewService(uploads)
+	got, err := svc.Refs(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantA := map[string]bool{"blog/post": true, "drafts/wip": true}
+	for _, p := range got["1700000000_a.png"] {
+		delete(wantA, p)
+	}
+	if len(wantA) != 0 {
+		t.Errorf("a.png missing refs: %v (got %v)", wantA, got["1700000000_a.png"])
+	}
+
+	if len(got["1700000001_b.png"]) != 1 || got["1700000001_b.png"][0] != "about" {
+		t.Errorf("b.png: want [about], got %v", got["1700000001_b.png"])
+	}
+
+	if len(got["1700000002_c.png"]) != 0 {
+		t.Errorf("c.png: want no refs, got %v", got["1700000002_c.png"])
+	}
+}
+
+func TestRefs_SkipsNonMarkdownAndGitkeep(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_a.png"), []byte("x"), 0644)
+	os.WriteFile(filepath.Join(uploads, ".gitkeep"), nil, 0644)
+
+	writeFile(t, content, "post.md", "/uploads/1700000000_a.png")
+	writeFile(t, content, "post.txt", "/uploads/1700000000_a.png")
+	writeFile(t, content, ".gitkeep", "")
+
+	svc := NewService(uploads)
+	got, err := svc.Refs(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := got[".gitkeep"]; ok {
+		t.Error(".gitkeep should not be in refs map")
+	}
+	if len(got["1700000000_a.png"]) != 1 {
+		t.Errorf("want 1 ref (only post.md), got %v", got["1700000000_a.png"])
+	}
+}
+
+func TestRefs_ReturnsEmptySliceForUnusedImage(t *testing.T) {
+	uploads := t.TempDir()
+	content := t.TempDir()
+
+	os.WriteFile(filepath.Join(uploads, "1700000000_orphan.png"), []byte("x"), 0644)
+	writeFile(t, content, "post.md", "no images here")
+
+	svc := NewService(uploads)
+	got, err := svc.Refs(content)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := got["1700000000_orphan.png"]; !ok {
+		t.Fatal("orphan image must have an entry in the map")
+	}
+	if len(got["1700000000_orphan.png"]) != 0 {
+		t.Errorf("want empty slice, got %v", got["1700000000_orphan.png"])
 	}
 }
