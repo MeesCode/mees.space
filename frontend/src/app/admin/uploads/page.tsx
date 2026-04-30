@@ -15,6 +15,7 @@ export default function UploadsPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [refs, setRefs] = useState<string[] | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ filename: string; pages: string[] } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,6 +65,58 @@ export default function UploadsPage() {
     await navigator.clipboard?.writeText(selectedInfo.url);
   };
 
+  const requestDelete = async (filename: string) => {
+    // Use grid info to short-circuit the obvious "no refs" path.
+    const info = images.find((i) => i.filename === filename);
+    if (info && info.ref_count === 0) {
+      const res = await apiFetch(`/api/images/${encodeURIComponent(filename)}`, { method: "DELETE" });
+      if (res.status === 204) {
+        setImages((prev) => prev.filter((i) => i.filename !== filename));
+        setSelected((s) => (s === filename ? null : s));
+        return;
+      }
+      if (res.status === 409) {
+        const body = await res.json().catch(() => ({ pages: [] as string[] }));
+        setPendingDelete({ filename, pages: body.pages ?? [] });
+        return;
+      }
+      if (res.status === 404) {
+        setImages((prev) => prev.filter((i) => i.filename !== filename));
+        setSelected((s) => (s === filename ? null : s));
+        return;
+      }
+      return;
+    }
+
+    // Has refs (or unknown). Always confirm.
+    const refsRes = await apiFetch(`/api/images/${encodeURIComponent(filename)}/refs`);
+    const pages = refsRes.ok ? ((await refsRes.json()) as ImageRefs).pages : [];
+    setPendingDelete({ filename, pages });
+  };
+
+  const confirmForceDelete = async () => {
+    if (!pendingDelete) return;
+    const res = await apiFetch(
+      `/api/images/${encodeURIComponent(pendingDelete.filename)}?force=1`,
+      { method: "DELETE" },
+    );
+    if (res.status === 204 || res.status === 404) {
+      setImages((prev) => prev.filter((i) => i.filename !== pendingDelete.filename));
+      setSelected((s) => (s === pendingDelete.filename ? null : s));
+    }
+    setPendingDelete(null);
+  };
+
+  const uploadFile = async (file: File) => {
+    const form = new FormData();
+    form.append("file", file);
+    const res = await apiFetch("/api/images", { method: "POST", body: form });
+    if (res.ok) {
+      const info: ImageInfo = await res.json();
+      setImages((prev) => [info, ...prev.filter((i) => i.filename !== info.filename)]);
+    }
+  };
+
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", color: "var(--color)" }}>
       {/* Left rail */}
@@ -93,6 +146,32 @@ export default function UploadsPage() {
         <RailRow active={sort === "newest"} onClick={() => setSort("newest")} testid="sort-newest">↓ newest</RailRow>
         <RailRow active={sort === "name"} onClick={() => setSort("name")} testid="sort-name">name</RailRow>
         <RailRow active={sort === "size"} onClick={() => setSort("size")} testid="sort-size">size</RailRow>
+
+        <div
+          data-testid="dropzone"
+          onDragOver={(e) => { e.preventDefault(); }}
+          onDrop={(e) => {
+            e.preventDefault();
+            const files = Array.from(e.dataTransfer?.files ?? []);
+            files.forEach((f) => uploadFile(f));
+          }}
+          onClick={() => document.getElementById("upload-input")?.click()}
+          style={dropzoneStyle}
+        >
+          ⬆ drag &amp; drop<br />or click to upload
+          <input
+            id="upload-input"
+            type="file"
+            accept="image/*"
+            multiple
+            style={{ display: "none" }}
+            onChange={(e) => {
+              const files = Array.from(e.target.files ?? []);
+              files.forEach((f) => uploadFile(f));
+              e.currentTarget.value = "";
+            }}
+          />
+        </div>
       </div>
 
       {/* Grid + totals */}
@@ -138,6 +217,35 @@ export default function UploadsPage() {
         </div>
       </div>
 
+      {/* Confirm delete modal */}
+      {pendingDelete && (
+        <div data-testid="confirm-modal" style={modalBackdrop}>
+          <div style={modalBoxStyle}>
+            <div style={{ fontSize: 13, marginBottom: 10 }}>
+              Delete <code>{pendingDelete.filename}</code>?
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", marginBottom: 8 }}>
+              Still referenced by:
+            </div>
+            <div style={{ marginBottom: 14, maxHeight: 160, overflow: "auto" }}>
+              {pendingDelete.pages.map((p) => (
+                <a
+                  key={p}
+                  href={`/admin/editor?path=${encodeURIComponent(p)}`}
+                  style={{ display: "block", color: "rgba(255,255,255,0.85)", textDecoration: "none", fontSize: 11, padding: "3px 0" }}
+                >
+                  /{p}
+                </a>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setPendingDelete(null)} style={cancelButton}>Cancel</button>
+              <button data-testid="confirm-delete" onClick={confirmForceDelete} style={dangerButton}>Delete anyway</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Detail rail */}
       <div style={detailRailStyle}>
         {selectedInfo ? (
@@ -173,6 +281,22 @@ export default function UploadsPage() {
 
             <div style={{ display: "flex", gap: 6 }}>
               <button data-testid="copy-url" onClick={copyUrl} style={{ ...primaryButton, flex: 1 }}>Copy URL</button>
+              <button
+                data-testid="delete-button"
+                onClick={() => selectedInfo && requestDelete(selectedInfo.filename)}
+                style={{
+                  flex: 1,
+                  background: "none",
+                  border: "1px solid rgba(255,100,100,0.4)",
+                  color: "#ff6b6b",
+                  borderRadius: 4,
+                  padding: "6px 10px",
+                  cursor: "pointer",
+                  fontSize: 11,
+                }}
+              >
+                Delete
+              </button>
             </div>
           </>
         ) : (
@@ -291,6 +415,47 @@ const primaryButton: React.CSSProperties = {
   borderRadius: 4,
   padding: "6px 10px",
   color: "#000",
+  cursor: "pointer",
+  fontSize: 11,
+  fontWeight: "bold",
+};
+const dropzoneStyle: React.CSSProperties = {
+  marginTop: 18,
+  border: "1px dashed rgba(255,255,255,0.2)",
+  borderRadius: 4,
+  padding: 14,
+  textAlign: "center",
+  color: "rgba(255,255,255,0.5)",
+  fontSize: 11,
+  cursor: "pointer",
+  background: "rgba(255,255,255,0.02)",
+};
+const modalBackdrop: React.CSSProperties = {
+  position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)",
+  display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999,
+};
+const modalBoxStyle: React.CSSProperties = {
+  background: "var(--background)",
+  border: "1px solid rgba(255,255,255,0.15)",
+  borderRadius: 6,
+  padding: 18,
+  width: 380,
+};
+const cancelButton: React.CSSProperties = {
+  background: "none",
+  border: "1px solid rgba(255,255,255,0.15)",
+  color: "rgba(255,255,255,0.7)",
+  padding: "5px 12px",
+  borderRadius: 4,
+  cursor: "pointer",
+  fontSize: 11,
+};
+const dangerButton: React.CSSProperties = {
+  background: "#ff6b6b",
+  border: "none",
+  color: "#000",
+  padding: "5px 12px",
+  borderRadius: 4,
   cursor: "pointer",
   fontSize: 11,
   fontWeight: "bold",
