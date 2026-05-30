@@ -8,11 +8,13 @@ RUN CGO_ENABLED=0 go build -o /app/mees-server ./cmd/server
 
 # Stage 2: Build Next.js frontend (static export)
 FROM node:22-alpine AS frontend-builder
-WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ .
-RUN NODE_ENV=production npm run build
+WORKDIR /app
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN cd frontend && npm ci
+COPY frontend/ ./frontend/
+# prebuild script needs Go testdata for slug parity verification
+COPY internal/render/testdata/ ./internal/render/testdata/
+RUN cd frontend && NODE_ENV=production npm run build
 
 # Stage 3: Runtime
 FROM alpine:3.20
