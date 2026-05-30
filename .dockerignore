@@ -1,4 +1,4 @@
-# Git tracked files — Docker doesn't need these
+# Build context — Docker doesn't need these
 .git/
 .gitignore
 .gitattributes
@@ -8,7 +8,6 @@ Makefile
 frontend/node_modules/
 frontend/.next/
 frontend/tsconfig.tsbuildinfo
-frontend/package-lock.json
 tmp/
 .air.toml
 .claude/
